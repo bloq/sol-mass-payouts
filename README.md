@@ -52,6 +52,18 @@ Once a claims group is created, anyone may supply additional funds.
 The funder (owner) may withdraw funds from the claims group,
 if-and-only-if the Withdraw Lock is not locked.
 
+### Anyone:  On-chain ERC20 mass-send
+
+A separate MultiTransfer contract is provided, which provides the
+simple utility of
+
+1. Receive N amount of an ERC20 token
+2. Send tokens to a list of (address,amount) pairs.
+
+This contract and function is not tied in any way to the above
+merkle-related operations, and is provided as an alternate mass-pay
+operation for ERC20 tokens.
+
 ## Security notes
 
 ### Under-funding
