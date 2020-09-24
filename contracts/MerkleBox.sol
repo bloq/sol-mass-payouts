@@ -13,10 +13,10 @@ contract MerkleBox is IMerkleBox {
 
     struct Holding {
 	address owner;		// account that contributed funds
-	address erc20;
-	uint256 balance;	
-	bytes32 merkleRoot;
-	bool withdrawable;
+	address erc20;		// claim-able ERC20 asset
+	uint256 balance;	// all-claims balance for this holding
+	bytes32 merkleRoot;	// root of claims merkle tree
+	bool withdrawable;	// WL: is owner permitted to withdraw funds?
     }
 
     mapping(bytes32 => Holding) public holdings;
@@ -143,6 +143,8 @@ contract MerkleBox is IMerkleBox {
 
     //////////////////////////////////////////////////////////
 
+    // generate hash of (claim holder, amount)
+    // claim holder must be the caller
     function _leafHash(uint256 amount) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(msg.sender, amount));
     }
