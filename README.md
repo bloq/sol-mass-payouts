@@ -40,9 +40,12 @@ Store a merkle root, and associated ERC20 funds, on chain.
 **WARNING**:  There is no on-chain validation that funds supplied equal the
 funds required to fully satisfy all claims.  The funder may under-fund.
 
-### Funder:  Add more funds to claims group.
+### Anyone:  Add more funds to claims group.
 
 Supply additional quantity of asset to the claims group.
+
+Usually the funder calls this operation, but that is not a requirement.
+Once a claims group is created, anyone may supply additional funds.
 
 ### Funder:  Withdraw funds from claims group.
 
