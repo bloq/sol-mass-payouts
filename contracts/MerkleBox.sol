@@ -134,6 +134,7 @@ contract MerkleBox is IMerkleBox {
 	require(holding.balance >= totalBalance, "BUG: Internal balance error");
 
 	// update state
+	leafClaimed[merkleRoot][leaf] = true;
 	holding.balance -= amount;
 	token.safeTransferFrom(address(this), msg.sender, amount);
 
