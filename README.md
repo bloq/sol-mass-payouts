@@ -47,7 +47,7 @@ Supply additional quantity of asset to the claims group.
 ### Funder:  Withdraw funds from claims group.
 
 The funder (owner) may withdraw funds from the claims group,
-if-and-only-if the "withdrawable" feature is enabled.
+if-and-only-if the Withdraw Lock is not locked.
 
 ## Security notes
 
