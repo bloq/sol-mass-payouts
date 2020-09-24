@@ -37,7 +37,7 @@ User must be the address in the claim, and the claim must be unspent.
 
 Store a merkle root, and associated ERC20 funds, on chain.
 
-WARNING:  There is no on-chain validation that funds supplied equal the
+**WARNING**:  There is no on-chain validation that funds supplied equal the
 funds required to fully satisfy all claims.  The funder may under-fund.
 
 ### Funder:  Add more funds to claims group.
@@ -48,6 +48,20 @@ Supply additional quantity of asset to the claims group.
 
 The funder (owner) may withdraw funds from the claims group,
 if-and-only-if the "withdrawable" feature is enabled.
+
+## Security notes
+
+### Under-funding
+
+It appears prohibitively expensive to validate that a holding is fully
+funded.  (Solutions welcome)
+
+As a consequence, it is possible to under-fund a claims group.
+
+### Withdraw locking
+
+The withdraw lock feature permits permanent disabling of withdrawals
+by the funder/owner.
 
 ## Setup.
 1. Install packages
