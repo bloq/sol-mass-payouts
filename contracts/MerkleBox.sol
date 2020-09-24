@@ -16,7 +16,7 @@ contract MerkleBox is IMerkleBox {
 	address erc20;		// claim-able ERC20 asset
 	uint256 balance;	// all-claims balance for this holding
 	bytes32 merkleRoot;	// root of claims merkle tree
-	bool withdrawable;	// WL: is owner permitted to withdraw funds?
+	uint256 withdrawLock;	// withdraw forbidden before this time
     }
 
     mapping(bytes32 => Holding) public holdings;
@@ -52,7 +52,7 @@ contract MerkleBox is IMerkleBox {
 	// reference our struct storage
         Holding storage holding = holdings[merkleRoot];
 	require(holding.owner != address(0), "Holding does not exist");
-	require(holding.withdrawable == true, "Holdings may not be withdrawn");
+	require(block.timestamp >= holding.withdrawLock, "Holdings may not be withdrawn");
 	require(holding.owner == msg.sender, "Only owner may withdraw");
 
 	// calculate amount to withdraw.  handle withdraw-all.
@@ -72,7 +72,7 @@ contract MerkleBox is IMerkleBox {
     }
 
     function addClaims(address erc20, uint256 amount, bytes32 merkleRoot,
-    		       bool withdrawable) external override {
+    		       uint256 withdrawLockTime) external override {
 	// prelim. parameter checks
 	require(erc20 != address(0), "Invalid ERC20 address");
 	require(merkleRoot != 0, "Merkle cannot be zero");
@@ -98,9 +98,9 @@ contract MerkleBox is IMerkleBox {
 	holding.erc20 = erc20;
 	holding.balance = balance;
 	holding.merkleRoot = merkleRoot;
-	holding.withdrawable = withdrawable;
+	holding.withdrawLock = withdrawLockTime;
 
-	emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawable);
+	emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawLockTime);
     }
 
     function claimable(bytes32 merkleRoot, uint256 amount, bytes32[] memory proof) external override view returns (bool) {
