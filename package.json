@@ -1,7 +1,7 @@
 {
-  "name": "sol-merkle-claims",
-  "version": "0.1.0",
-  "description": "sol-merkle-claims",
+  "name": "sol-mass-payouts",
+  "version": "0.1.1",
+  "description": "sol-mass-payouts",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"

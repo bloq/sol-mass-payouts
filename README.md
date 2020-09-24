@@ -60,8 +60,12 @@ As a consequence, it is possible to under-fund a claims group.
 
 ### Withdraw locking
 
-The withdraw lock feature permits permanent disabling of withdrawals
-by the funder/owner.
+The withdraw lock feature permits disabling of withdrawals until
+a specified time.
+
+To disable this feature, simply set the lock time to zero, or some time
+in the past.   To permanently lock the funds, set the lock time to a
+maximum, or an arbitrary time millions of years in the future.
 
 ## Setup.
 1. Install packages
