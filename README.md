@@ -1,6 +1,6 @@
 # sol-merkle-claims
 
-A utility allowing for mass distribution of assets, with a single
+Utilities enabling the mass distribution of assets, with a single
 funding transaction.
 
 ## Summary example
