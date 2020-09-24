@@ -1,4 +1,4 @@
-# sol-merkle-claims
+# sol-mass-payouts
 
 Utilities enabling the mass distribution of assets, with a single
 funding transaction.
