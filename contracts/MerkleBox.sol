@@ -71,7 +71,7 @@ contract MerkleBox is IMerkleBox {
 	emit MerkleFundUpdate(msg.sender, merkleRoot, amount, true);
     }
 
-    function addClaims(address erc20, uint256 amount, bytes32 merkleRoot,
+    function newClaimsGroup(address erc20, uint256 amount, bytes32 merkleRoot,
     		       uint256 withdrawLockTime) external override {
 	// prelim. parameter checks
 	require(erc20 != address(0), "Invalid ERC20 address");

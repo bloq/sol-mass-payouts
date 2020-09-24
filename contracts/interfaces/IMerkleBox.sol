@@ -14,7 +14,7 @@ interface IMerkleBox {
 
     function addFunds(bytes32 merkleRoot, uint256 amount) external;
     function withdrawFunds(bytes32 merkleRoot, uint256 amount) external;
-    function addClaims(address erc20, uint256 amount, bytes32 merkleRoot,
+    function newClaimsGroup(address erc20, uint256 amount, bytes32 merkleRoot,
                        uint256 withdrawLockTime) external;
     function claimable(bytes32 merkleRoot, uint256 amount, bytes32[] memory proof) external view returns (bool);
     function claim(bytes32 merkleRoot, uint256 amount, bytes32[] memory proof) external;
