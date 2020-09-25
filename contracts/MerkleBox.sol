@@ -96,7 +96,7 @@ contract MerkleBox is IMerkleBox {
 	// record holding in stable storage
 	holding.owner = msg.sender;
 	holding.erc20 = erc20;
-	holding.balance = balance;
+	holding.balance = amount;
 	holding.merkleRoot = merkleRoot;
 	holding.withdrawLock = withdrawLockTime;
 
