@@ -14,7 +14,7 @@ contract MerkleBox is IMerkleBox {
     struct Holding {
 	address owner;		// account that contributed funds
 	address erc20;		// claim-able ERC20 asset
-	uint256 balance;	// all-claims balance for this holding
+	uint256 balance;	// amount of token held currently
 	bytes32 merkleRoot;	// root of claims merkle tree
 	uint256 withdrawLock;	// withdraw forbidden before this time
     }
