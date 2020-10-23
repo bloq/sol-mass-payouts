@@ -7,22 +7,17 @@
     "test": "test"
   },
   "scripts": {
-    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/*.sol",
-    "solhint": "./node_modules/.bin/solhint ./contracts/*.sol",
-    "truffle": "./node_modules/.bin/truffle",
-    "ganache-cli": "./node_modules/.bin/ganache-cli",
-    "lint": "./node_modules/.bin/eslint ./test/*",
-    "lint:fix": "./node_modules/.bin/eslint --fix ./test --ext .js"
+    "solhint": "solhint './contracts/**/*.sol'",
+    "solhint:fix": "prettier --write 'contracts/**/*.sol'",
+    "truffle": "truffle",
+    "ganache-cli": "ganache-cli",
+    "lint": "eslint ./test/*",
+    "lint:fix": "eslint --fix ./test --ext .js"
   },
   "dependencies": {
     "bip39": "^3.0.2",
     "config": "^3.3.1",
-    "cron": "^1.8.2",
-    "express": "^4.17.1",
-    "fs": "0.0.1-security",
-    "hdkey": "^2.0.1",
-    "node-cron": "^2.0.3",
-    "web3": "^1.2.9"
+    "hdkey": "^2.0.1"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.0.0",
@@ -45,5 +40,9 @@
     "solhint": "^2.3.1",
     "solhint-plugin-prettier": "0.0.4",
     "truffle": "^5.1.32"
-  }
+  },
+  "pre-commit": [
+    "solhint",
+    "lint"
+  ]
 }
