@@ -1,10 +1,19 @@
 {
-  "extends": ["solhint:recommended"],
+  "extends": [
+    "solhint:recommended"
+  ],
   "rules": {
     "prettier/prettier": "error",
-    "avoid-throw": false,
+    "avoid-throw": "warn",
     "avoid-suicide": "error",
-    "avoid-sha3": "warn"
+    "avoid-sha3": "warn",
+    "compiler-version": "off",
+    "max-line-length": [
+      "error",
+      150
+    ]
   },
-  "plugins": ["prettier"]
+  "plugins": [
+    "prettier"
+  ]
 }

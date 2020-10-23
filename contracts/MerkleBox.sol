@@ -1,144 +1,154 @@
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.6;
 
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/cryptography/MerkleProof.sol';
-import './interfaces/IMerkleBox.sol';
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+import "./interfaces/IMerkleBox.sol";
 
 contract MerkleBox is IMerkleBox {
     using MerkleProof for MerkleProof;
     using SafeERC20 for IERC20;
 
     struct Holding {
-	address owner;		// account that contributed funds
-	address erc20;		// claim-able ERC20 asset
-	uint256 balance;	// amount of token held currently
-	bytes32 merkleRoot;	// root of claims merkle tree
-	uint256 withdrawLock;	// withdraw forbidden before this time
+        address owner; // account that contributed funds
+        address erc20; // claim-able ERC20 asset
+        uint256 balance; // amount of token held currently
+        bytes32 merkleRoot; // root of claims merkle tree
+        uint256 withdrawLock; // withdraw forbidden before this time
     }
 
     mapping(bytes32 => Holding) public holdings;
     mapping(bytes32 => mapping(bytes32 => bool)) public leafClaimed;
 
     function addFunds(bytes32 merkleRoot, uint256 amount) external override {
-	// prelim. parameter checks
-	require(amount != 0, "Invalid amount");
+        // prelim. parameter checks
+        require(amount != 0, "Invalid amount");
 
-	// reference our struct storage
+        // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
-	require(holding.owner != address(0), "Holding does not exist");
+        require(holding.owner != address(0), "Holding does not exist");
 
-	// calculate amount to deposit.  handle deposit-all.
-	IERC20 token = IERC20(holding.erc20);
-	uint256 balance = token.balanceOf(msg.sender);
-	if (amount == uint256(-1)) {
-	    amount = balance;
-	}
-	require(amount <= balance, "Insufficient balance");
-	require(amount != 0, "Amount cannot be zero");
+        // calculate amount to deposit.  handle deposit-all.
+        IERC20 token = IERC20(holding.erc20);
+        uint256 balance = token.balanceOf(msg.sender);
+        if (amount == uint256(-1)) {
+            amount = balance;
+        }
+        require(amount <= balance, "Insufficient balance");
+        require(amount != 0, "Amount cannot be zero");
 
-	// transfer token to this contract
-	token.safeTransferFrom(msg.sender, address(this), amount);
+        // transfer token to this contract
+        token.safeTransferFrom(msg.sender, address(this), amount);
 
-	// update holdings record
-	holding.balance += amount;
+        // update holdings record
+        holding.balance += amount;
 
-	emit MerkleFundUpdate(msg.sender, merkleRoot, amount, false);
+        emit MerkleFundUpdate(msg.sender, merkleRoot, amount, false);
     }
 
     function withdrawFunds(bytes32 merkleRoot, uint256 amount) external override {
-	// reference our struct storage
+        // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
-	require(holding.owner != address(0), "Holding does not exist");
-	require(block.timestamp >= holding.withdrawLock, "Holdings may not be withdrawn");
-	require(holding.owner == msg.sender, "Only owner may withdraw");
+        require(holding.owner != address(0), "Holding does not exist");
+        require(block.timestamp >= holding.withdrawLock, "Holdings may not be withdrawn");
+        require(holding.owner == msg.sender, "Only owner may withdraw");
 
-	// calculate amount to withdraw.  handle withdraw-all.
-	IERC20 token = IERC20(holding.erc20);
-	if (amount == uint256(-1)) {
-	    amount = holding.balance;
-	}
-	require(amount <= holding.balance, "Insufficient balance");
+        // calculate amount to withdraw.  handle withdraw-all.
+        IERC20 token = IERC20(holding.erc20);
+        if (amount == uint256(-1)) {
+            amount = holding.balance;
+        }
+        require(amount <= holding.balance, "Insufficient balance");
 
-	// transfer token to this contract
-	token.safeTransferFrom(address(this), msg.sender, amount);
+        // transfer token to this contract
+        token.safeTransferFrom(address(this), msg.sender, amount);
 
-	// update holdings record
-	holding.balance -= amount;
+        // update holdings record
+        holding.balance -= amount;
 
-	emit MerkleFundUpdate(msg.sender, merkleRoot, amount, true);
+        emit MerkleFundUpdate(msg.sender, merkleRoot, amount, true);
     }
 
-    function newClaimsGroup(address erc20, uint256 amount, bytes32 merkleRoot,
-    		       uint256 withdrawLockTime) external override {
-	// prelim. parameter checks
-	require(erc20 != address(0), "Invalid ERC20 address");
-	require(merkleRoot != 0, "Merkle cannot be zero");
+    function newClaimsGroup(
+        address erc20,
+        uint256 amount,
+        bytes32 merkleRoot,
+        uint256 withdrawLockTime
+    ) external override {
+        // prelim. parameter checks
+        require(erc20 != address(0), "Invalid ERC20 address");
+        require(merkleRoot != 0, "Merkle cannot be zero");
 
-	// reference our struct storage
+        // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
-	require(holding.owner == address(0), "Holding already exists");
+        require(holding.owner == address(0), "Holding already exists");
 
-	// calculate amount to deposit.  handle deposit-all.
-	IERC20 token = IERC20(erc20);
-	uint256 balance = token.balanceOf(msg.sender);
-	if (amount == uint256(-1)) {
-	    amount = balance;
-	}
-	require(amount <= balance, "Insufficient balance");
-	require(amount != 0, "Amount cannot be zero");
+        // calculate amount to deposit.  handle deposit-all.
+        IERC20 token = IERC20(erc20);
+        uint256 balance = token.balanceOf(msg.sender);
+        if (amount == uint256(-1)) {
+            amount = balance;
+        }
+        require(amount <= balance, "Insufficient balance");
+        require(amount != 0, "Amount cannot be zero");
 
-	// transfer token to this contract
-	token.safeTransferFrom(msg.sender, address(this), amount);
+        // transfer token to this contract
+        token.safeTransferFrom(msg.sender, address(this), amount);
 
-	// record holding in stable storage
-	holding.owner = msg.sender;
-	holding.erc20 = erc20;
-	holding.balance = amount;
-	holding.merkleRoot = merkleRoot;
-	holding.withdrawLock = withdrawLockTime;
+        // record holding in stable storage
+        holding.owner = msg.sender;
+        holding.erc20 = erc20;
+        holding.balance = amount;
+        holding.merkleRoot = merkleRoot;
+        holding.withdrawLock = withdrawLockTime;
 
-	emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawLockTime);
+        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawLockTime);
     }
 
-    function claimable(bytes32 merkleRoot, uint256 amount, bytes32[] memory proof) external override view returns (bool) {
-
-	bytes32 leaf = _leafHash(amount);
-	if (leafClaimed[merkleRoot][leaf] == true) {
-	    return false;
-	}
-	return MerkleProof.verify(proof, merkleRoot, leaf);
+    function claimable(
+        bytes32 merkleRoot,
+        uint256 amount,
+        bytes32[] memory proof
+    ) external view override returns (bool) {
+        bytes32 leaf = _leafHash(amount);
+        if (leafClaimed[merkleRoot][leaf] == true) {
+            return false;
+        }
+        return MerkleProof.verify(proof, merkleRoot, leaf);
     }
 
-    function claim(bytes32 merkleRoot, uint256 amount, bytes32[] memory proof) external override {
-	bytes32 leaf = _leafHash(amount);
+    function claim(
+        bytes32 merkleRoot,
+        uint256 amount,
+        bytes32[] memory proof
+    ) external override {
+        bytes32 leaf = _leafHash(amount);
 
-	// already spent?
-	require(leafClaimed[merkleRoot][leaf] == false, "Already claimed");
+        // already spent?
+        require(leafClaimed[merkleRoot][leaf] == false, "Already claimed");
 
-	// merkle proof valid?
+        // merkle proof valid?
         require(MerkleProof.verify(proof, merkleRoot, leaf) == true, "Claim not found");
 
-	// holding exists?
+        // holding exists?
         Holding storage holding = holdings[merkleRoot];
-	require(holding.owner != address(0), "Holding not found");
+        require(holding.owner != address(0), "Holding not found");
 
-	// sufficient balance exists?   (funder may have under-funded)
-	require(holding.balance >= amount, "Claim under-funded by funder.");
+        // sufficient balance exists?   (funder may have under-funded)
+        require(holding.balance >= amount, "Claim under-funded by funder.");
 
-	// assertion, for condition that should never happen in the field
-	IERC20 token = IERC20(holding.erc20);
-	uint256 totalBalance = token.balanceOf(msg.sender);
-	require(holding.balance >= totalBalance, "BUG: Internal balance error");
+        // assertion, for condition that should never happen in the field
+        IERC20 token = IERC20(holding.erc20);
+        uint256 totalBalance = token.balanceOf(msg.sender);
+        require(holding.balance >= totalBalance, "BUG: Internal balance error");
 
-	// update state
-	leafClaimed[merkleRoot][leaf] = true;
-	holding.balance -= amount;
-	token.safeTransferFrom(address(this), msg.sender, amount);
+        // update state
+        leafClaimed[merkleRoot][leaf] = true;
+        holding.balance -= amount;
+        token.safeTransferFrom(address(this), msg.sender, amount);
 
-	emit MerkleClaim(msg.sender, holding.erc20, amount);
+        emit MerkleClaim(msg.sender, holding.erc20, amount);
     }
 
     //////////////////////////////////////////////////////////
@@ -148,6 +158,4 @@ contract MerkleBox is IMerkleBox {
     function _leafHash(uint256 amount) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(msg.sender, amount));
     }
-
 }
-
