@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 import "./interfaces/IMerkleBox.sol";
@@ -9,6 +10,7 @@ import "./interfaces/IMerkleBox.sol";
 contract MerkleBox is IMerkleBox {
     using MerkleProof for MerkleProof;
     using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     struct Holding {
         address owner; // account that contributed funds
@@ -42,7 +44,7 @@ contract MerkleBox is IMerkleBox {
         token.safeTransferFrom(msg.sender, address(this), amount);
 
         // update holdings record
-        holding.balance += amount;
+        holding.balance = holding.balance.add(amount);
 
         emit MerkleFundUpdate(msg.sender, merkleRoot, amount, false);
     }
@@ -51,6 +53,7 @@ contract MerkleBox is IMerkleBox {
         // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
         require(holding.owner != address(0), "Holding does not exist");
+        //solhint-disable-next-line not-rely-on-time
         require(block.timestamp >= holding.withdrawLock, "Holdings may not be withdrawn");
         require(holding.owner == msg.sender, "Only owner may withdraw");
 
@@ -62,10 +65,10 @@ contract MerkleBox is IMerkleBox {
         require(amount <= holding.balance, "Insufficient balance");
 
         // transfer token to this contract
-        token.safeTransferFrom(address(this), msg.sender, amount);
+        token.safeTransfer(msg.sender, amount);
 
         // update holdings record
-        holding.balance -= amount;
+        holding.balance = holding.balance.sub(amount);
 
         emit MerkleFundUpdate(msg.sender, merkleRoot, amount, true);
     }
@@ -112,10 +115,24 @@ contract MerkleBox is IMerkleBox {
         bytes32[] memory proof
     ) external view override returns (bool) {
         bytes32 leaf = _leafHash(amount);
-        if (leafClaimed[merkleRoot][leaf] == true) {
+        // already claimed?
+        if (leafClaimed[merkleRoot][leaf]) {
             return false;
         }
-        return MerkleProof.verify(proof, merkleRoot, leaf);
+        // merkle proof is invalid or claim not found
+        if (!MerkleProof.verify(proof, merkleRoot, leaf)) {
+            return false;
+        }
+        // holding exists?
+        Holding memory holding = holdings[merkleRoot];
+        if (holding.owner == address(0)) {
+            return false;
+        }
+        // sufficient balance exists?   (funder may have under-funded)
+        if (holding.balance < amount) {
+            return false;
+        }
+        return true;
     }
 
     function claim(
@@ -145,8 +162,8 @@ contract MerkleBox is IMerkleBox {
 
         // update state
         leafClaimed[merkleRoot][leaf] = true;
-        holding.balance -= amount;
-        token.safeTransferFrom(address(this), msg.sender, amount);
+        holding.balance = holding.balance.sub(amount);
+        token.safeTransfer(msg.sender, amount);
 
         emit MerkleClaim(msg.sender, holding.erc20, amount);
     }

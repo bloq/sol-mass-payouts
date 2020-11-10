@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.6;
+pragma solidity 0.6.12;
 
 interface IMerkleBox {
     event NewMerkle(address indexed sender, address indexed erc20, uint256 amount, bytes32 indexed merkleRoot, uint256 withdrawLock);
