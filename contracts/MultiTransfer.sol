@@ -17,8 +17,8 @@ contract MultiTransfer is IMultiTransfer {
         uint256 amountIn,
         uint256[] calldata bits
     ) external override returns (bool) {
-        require(erc20 != address(0));
-        require(amountIn != 0);
+        require(erc20 != address(0), "ERC20 address invalid");
+        require(amountIn != 0, "Input amount invalid");
 
         // receive total amount
         IERC20 token = IERC20(erc20);
@@ -35,7 +35,7 @@ contract MultiTransfer is IMultiTransfer {
             totalOut += amount;
         }
 
-        require(amountIn == totalOut);
+        require(amountIn == totalOut, "Output amt must equal input amt");
 
         return true;
     }
