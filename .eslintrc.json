@@ -7,7 +7,9 @@
     "before": false,
     "it": false,
     "web3": false,
-    "describe": false
+    "describe": false,
+    "assert":true,
+    "context":true
   },
   "rules": {
     "prefer-const": "error",
