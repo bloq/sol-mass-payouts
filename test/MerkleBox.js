@@ -14,12 +14,13 @@ function receipt (recipient, amount) {
 contract('MerkleBox', async (accounts) => {
   // eslint-disable-next-line no-unused-vars
   const [_, funder, funder2, recipient, recipient2, other] = accounts
-  let erc20, merkleBox
+  let erc20, merkleBox, unlockTime
 
   beforeEach(async () => {
     merkleBox = await MerkleBox.new()
     erc20 = await ERC20Mock.new('Test', 'TEST', funder, 2000)
     await erc20.transfer(funder2, 1000, {from: funder})
+    unlockTime = (await time.latest()).add(time.duration.weeks(5))
   })
 
   context('before a claims group is created', async () => {
@@ -50,30 +51,43 @@ contract('MerkleBox', async (accounts) => {
 
     it('emits NewMerkle event and deposits funds', async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
-      const tx = await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, 7, {from: funder})
-      expectEvent(tx, 'NewMerkle', {sender: funder, erc20: erc20.address, amount: new BN(1000), merkleRoot: merkleRoot, withdrawLock: new BN(7)})
+      const tx = await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder})
+      expectEvent(tx, 'NewMerkle', {sender: funder, erc20: erc20.address, amount: new BN(1000), merkleRoot: merkleRoot, withdrawLock: unlockTime})
       assert.equal(await erc20.balanceOf(funder), 0)
       assert.equal(await erc20.balanceOf(merkleBox.address), 1000)
     })
 
     it('reverts if ERC20 address is zero', async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await expectRevert(merkleBox.newClaimsGroup(constants.ZERO_ADDRESS, 1000, merkleRoot, 0, {from: funder}), 'Invalid ERC20 address')
+      await expectRevert(merkleBox.newClaimsGroup(constants.ZERO_ADDRESS, 1000, merkleRoot, unlockTime, {from: funder}), 'Invalid ERC20 address')
     })
 
     it('reverts if merkleRoot is zero', async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1000, constants.ZERO_ADDRESS, 0, {from: funder}), 'Merkle cannot be zero')
+      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1000, constants.ZERO_ADDRESS, unlockTime, {from: funder}), 'Merkle cannot be zero')
+    })
+
+    it('reverts if withdraw lock time is less than minimum', async () => {
+      const errorMessage = 'Holing lock must exceed minimum lock period.'
+      await erc20.approve(merkleBox.address, 1000, {from: funder})
+      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, 0, {from: funder}), errorMessage)
+    })
+
+    it('reverts if holding already exist', async () => {
+      await erc20.approve(merkleBox.address, 1000, {from: funder})
+      await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder})
+      const tx = merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder2})
+      await expectRevert(tx, 'Holding already exists')
     })
 
     it('reverts if insufficient balance', async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1001, merkleRoot, 0, {from: funder}), 'Insufficient balance')
+      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1001, merkleRoot, unlockTime, {from: funder}), 'Insufficient balance')
     })
 
     it('reverts if amount is zero', async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 0, merkleRoot, 0, {from: funder}), 'Amount cannot be zero')
+      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 0, merkleRoot, unlockTime, {from: funder}), 'Amount cannot be zero')
     })
   })
 
@@ -83,30 +97,15 @@ contract('MerkleBox', async (accounts) => {
 
     beforeEach(async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, 0, {from: funder})
+      await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder})
     })
 
-    it('funder can withdraw', async () => {
-      const tx = await merkleBox.withdrawFunds(merkleRoot, 50, {from: funder})
-      expectEvent(tx, 'MerkleFundUpdate', {sender: funder, merkleRoot: merkleRoot, amount: new BN(50), withdraw: true})
-      assert.equal(await erc20.balanceOf(funder), 50)
-      assert.equal(await erc20.balanceOf(merkleBox.address), 950)
+    it('funder cannot withdraw', async () => {
+      await expectRevert(merkleBox.withdrawFunds(merkleRoot, 50, {from: funder}), 'Holdings may not be withdrawn')
     })
 
-    it('funder can withdraw-all (amount = -1)', async () => {
-      await merkleBox.withdrawFunds(merkleRoot, 50, {from: funder})
-      const tx = await merkleBox.withdrawFunds(merkleRoot, -1, {from: funder})
-      expectEvent(tx, 'MerkleFundUpdate', {sender: funder, merkleRoot: merkleRoot, amount: new BN(950), withdraw: true})
-      assert.equal(await erc20.balanceOf(funder), 1000)
-      assert.equal(await erc20.balanceOf(merkleBox.address), 0)
-    })
-
-    it('funder cannot over-withdraw', async () => {
-      await expectRevert(merkleBox.withdrawFunds(merkleRoot, 1001, {from: funder}), 'Insufficient balance')
-    })
-
-    it('other cannot withdraw', async () => {
-      await expectRevert(merkleBox.withdrawFunds(merkleRoot, 1000, {from: other}), 'Only owner may withdraw')
+    it('funder cannot withdraw-all', async () => {
+      await expectRevert(merkleBox.withdrawFunds(merkleRoot, -1, {from: funder}), 'Holdings may not be withdrawn')
     })
 
     it('anyone can add funds', async () => {
@@ -186,33 +185,21 @@ contract('MerkleBox', async (accounts) => {
       proof = proof.slice(0, proof.length - 5)
       expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: recipient})).to.equal(false)
     })
-  })
 
-  context('after creating a claims group with withdraw lock', async () => {
-    const merkleTree = new MerkleTree([receipt(recipient, 10), receipt(recipient2, 20)])
-    const merkleRoot = merkleTree.getHexRoot()
-    let unlockTime
-
-    beforeEach(async () => {
-      unlockTime = (await time.latest()).add(time.duration.weeks(2))
-      await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder})
-    })
-
-    it('funder cannot withdraw', async () => {
-      await expectRevert(merkleBox.withdrawFunds(merkleRoot, 50, {from: funder}), 'Holdings may not be withdrawn')
-    })
-
-    it('funder cannot withdraw-all', async () => {
-      await expectRevert(merkleBox.withdrawFunds(merkleRoot, -1, {from: funder}), 'Holdings may not be withdrawn')
-    })
-
-    it('recipient can claim', async () => {
+    it('reverts when holding is not found for given Merkle root', async () => {
+      const merkleTree2 = new MerkleTree([receipt(recipient, 10), receipt(recipient2, 25)])
+      const merkleRoot2 = merkleTree2.getHexRoot()
       const r = receipt(recipient, 10)
-      const proof = merkleTree.getHexProof(r)
-      const tx = await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
-      expectEvent(tx, 'MerkleClaim', {sender: recipient, erc20: erc20.address, amount: new BN(10)})
-      assert.equal(await erc20.balanceOf(recipient), 10)
+      const proof = merkleTree2.getHexProof(r)
+      await expectRevert(merkleBox.claim(merkleRoot2, 10, proof, {from: recipient}), 'Holding not found')
+    })
+
+    it('claimable() returns false when holding not found for given Merkle root', async () => {
+      const merkleTree2 = new MerkleTree([receipt(recipient, 10), receipt(recipient2, 25)])
+      const merkleRoot2 = merkleTree2.getHexRoot()
+      const r = receipt(recipient, 10)
+      const proof = merkleTree2.getHexProof(r)
+      expect(await merkleBox.claimable(merkleRoot2, 10, proof, {from: recipient})).to.equal(false)
     })
 
     context('when unlock time is reached', async () => {
@@ -234,6 +221,22 @@ contract('MerkleBox', async (accounts) => {
         assert.equal(await erc20.balanceOf(funder), 1000)
         assert.equal(await erc20.balanceOf(merkleBox.address), 0)
       })
+
+      it('funder cannot over-withdraw', async () => {
+        await expectRevert(merkleBox.withdrawFunds(merkleRoot, 1001, {from: funder}), 'Insufficient balance')
+      })
+
+      it('other cannot withdraw', async () => {
+        await expectRevert(merkleBox.withdrawFunds(merkleRoot, 1000, {from: other}), 'Only owner may withdraw')
+      })
+
+      it('recipient can claim', async () => {
+        const r = receipt(recipient, 10)
+        const proof = merkleTree.getHexProof(r)
+        const tx = await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
+        expectEvent(tx, 'MerkleClaim', {sender: recipient, erc20: erc20.address, amount: new BN(10)})
+        assert.equal(await erc20.balanceOf(recipient), 10)
+      })
     })
   })
 
@@ -243,7 +246,7 @@ contract('MerkleBox', async (accounts) => {
 
     beforeEach(async () => {
       await erc20.approve(merkleBox.address, 29, {from: funder})
-      await merkleBox.newClaimsGroup(erc20.address, 29, merkleRoot, 0, {from: funder})
+      await merkleBox.newClaimsGroup(erc20.address, 29, merkleRoot, unlockTime, {from: funder})
       const proof = merkleTree.getHexProof(receipt(recipient2, 20))
       await merkleBox.claim(merkleRoot, 20, proof, {from: recipient2})
     })
@@ -260,6 +263,26 @@ contract('MerkleBox', async (accounts) => {
       const tx = await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
       expectEvent(tx, 'MerkleClaim', {sender: recipient, erc20: erc20.address, amount: new BN(10)})
       assert.equal(await erc20.balanceOf(recipient), 10)
+    })
+  })
+
+  context('when a claims group has owner address in Merkle', async () => {
+    const merkleTree = new MerkleTree([receipt(funder, 10), receipt(recipient2, 20)])
+    const merkleRoot = merkleTree.getHexRoot()
+
+    beforeEach(async () => {
+      await erc20.approve(merkleBox.address, 30, {from: funder})
+      await merkleBox.newClaimsGroup(erc20.address, 30, merkleRoot, unlockTime, {from: funder})
+    })
+
+    it('reverts when holding owner calls claim', async () => {
+      const proof = merkleTree.getHexProof(receipt(funder, 10))
+      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: funder}), 'Holding owner cannot claim')
+    })
+
+    it('claimable() returns false when holding not found for given Merkle root', async () => {
+      const proof = merkleTree.getHexProof(receipt(funder, 10))
+      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: funder})).to.equal(false)
     })
   })
 })

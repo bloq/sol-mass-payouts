@@ -22,6 +22,7 @@ contract MerkleBox is IMerkleBox {
 
     mapping(bytes32 => Holding) public holdings;
     mapping(bytes32 => mapping(bytes32 => bool)) public leafClaimed;
+    uint256 public constant LOCKING_PERIOD = 30 days;
 
     function addFunds(bytes32 merkleRoot, uint256 amount) external override {
         // prelim. parameter checks
@@ -53,7 +54,6 @@ contract MerkleBox is IMerkleBox {
         // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
         require(holding.owner != address(0), "Holding does not exist");
-        //solhint-disable-next-line not-rely-on-time
         require(block.timestamp >= holding.withdrawLock, "Holdings may not be withdrawn");
         require(holding.owner == msg.sender, "Only owner may withdraw");
 
@@ -82,6 +82,7 @@ contract MerkleBox is IMerkleBox {
         // prelim. parameter checks
         require(erc20 != address(0), "Invalid ERC20 address");
         require(merkleRoot != 0, "Merkle cannot be zero");
+        require(withdrawLockTime >= block.timestamp + LOCKING_PERIOD, "Holing lock must exceed minimum lock period");
 
         // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
@@ -128,6 +129,10 @@ contract MerkleBox is IMerkleBox {
         if (holding.owner == address(0)) {
             return false;
         }
+        //  holding owner?
+        if (holding.owner == msg.sender) {
+            return false;
+        }
         // sufficient balance exists?   (funder may have under-funded)
         if (holding.balance < amount) {
             return false;
@@ -152,18 +157,16 @@ contract MerkleBox is IMerkleBox {
         Holding storage holding = holdings[merkleRoot];
         require(holding.owner != address(0), "Holding not found");
 
+        //  holding owner?
+        require(holding.owner != msg.sender, "Holding owner cannot claim");
+
         // sufficient balance exists?   (funder may have under-funded)
         require(holding.balance >= amount, "Claim under-funded by funder.");
-
-        // assertion, for condition that should never happen in the field
-        IERC20 token = IERC20(holding.erc20);
-        uint256 totalBalance = token.balanceOf(msg.sender);
-        require(holding.balance >= totalBalance, "BUG: Internal balance error");
 
         // update state
         leafClaimed[merkleRoot][leaf] = true;
         holding.balance = holding.balance.sub(amount);
-        token.safeTransfer(msg.sender, amount);
+        IERC20(holding.erc20).safeTransfer(msg.sender, amount);
 
         emit MerkleClaim(msg.sender, holding.erc20, amount);
     }

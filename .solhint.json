@@ -8,9 +8,16 @@
     "avoid-suicide": "error",
     "avoid-sha3": "warn",
     "compiler-version": "off",
+    "not-rely-on-time": "off",
     "max-line-length": [
       "error",
       150
+    ],
+    "reason-string": [
+      "warn",
+      {
+        "maxLength": 64
+      }
     ]
   },
   "plugins": [
