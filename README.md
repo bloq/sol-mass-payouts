@@ -27,18 +27,20 @@ claim transactions)
 
 Validate a supplied merkle receipt is associated with a valid, unspent claim.
 
-### User:   Claim tokens
+### Anyone:   Claim tokens
 
-Present a valid merkle receipt, and receive the associated tokens.
+Present a valid merkle receipt with account associated with it and transfer the associated tokens to given account.
 
-User must be the address in the claim, and the claim must be unspent.
+Provided account address must be the address in the claim, and the claim must be unspent.
 
 ### Funder:  Create new claims group
 
 Store a merkle root, and associated ERC20 funds, on chain.
+Must provide withdraw unlock time and its value must be atleast 30 days higher than claim group create time. 
 
 **WARNING**:  There is no on-chain validation that funds supplied equal the
 funds required to fully satisfy all claims.  The funder may under-fund.
+> Funder can not claim tokens via `claim()`
 
 ### Anyone:  Add more funds to claims group.
 
@@ -50,7 +52,7 @@ Once a claims group is created, anyone may supply additional funds.
 ### Funder:  Withdraw funds from claims group.
 
 The funder (owner) may withdraw funds from the claims group,
-if-and-only-if the Withdraw Lock is not locked.
+if-and-only-if the Withdraw Unlock time is reached.
 
 ### Anyone:  On-chain ERC20 mass-send
 
@@ -78,8 +80,7 @@ As a consequence, it is possible to under-fund a claims group.
 The withdraw lock feature permits disabling of withdrawals until
 a specified time.
 
-To disable this feature, simply set the lock time to zero, or some time
-in the past.   To permanently lock the funds, set the lock time to a
+There will be atleast 30 days withdraw locking. To permanently lock the funds, set the lock time to a
 maximum, or an arbitrary time millions of years in the future.
 
 ## Setup.

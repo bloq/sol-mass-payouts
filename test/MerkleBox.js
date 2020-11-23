@@ -32,16 +32,16 @@ contract('MerkleBox', async (accounts) => {
       await expectRevert(merkleBox.addFunds(merkleRoot, 50, {from: funder2}), 'Holding does not exist')
     })
 
-    it('claimable() returns false for an unknown claims group', async () => {
+    it('isClaimable() returns false for an unknown claims group', async () => {
       const r = receipt(recipient, 10)
       const proof = merkleTree.getHexProof(r)
-      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: recipient})).to.equal(false)
+      expect(await merkleBox.isClaimable(merkleRoot, recipient, 10, proof, {from: recipient})).to.equal(false)
     })
 
     it('reverts when claiming from an unknown claims group', async () => {
       const r = receipt(recipient, 10)
       const proof = merkleTree.getHexProof(r)
-      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: recipient}), 'Holding not found')
+      await expectRevert(merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient}), 'Holding not found')
     })
   })
 
@@ -52,7 +52,13 @@ contract('MerkleBox', async (accounts) => {
     it('emits NewMerkle event and deposits funds', async () => {
       await erc20.approve(merkleBox.address, 1000, {from: funder})
       const tx = await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder})
-      expectEvent(tx, 'NewMerkle', {sender: funder, erc20: erc20.address, amount: new BN(1000), merkleRoot: merkleRoot, withdrawLock: unlockTime})
+      expectEvent(tx, 'NewMerkle', {
+        sender: funder,
+        erc20: erc20.address,
+        amount: new BN(1000),
+        merkleRoot: merkleRoot,
+        withdrawUnlockTime: unlockTime
+      })
       assert.equal(await erc20.balanceOf(funder), 0)
       assert.equal(await erc20.balanceOf(merkleBox.address), 1000)
     })
@@ -132,58 +138,67 @@ contract('MerkleBox', async (accounts) => {
     it('recipient can claim', async () => {
       const r = receipt(recipient, 10)
       const proof = merkleTree.getHexProof(r)
-      const tx = await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
-      expectEvent(tx, 'MerkleClaim', {sender: recipient, erc20: erc20.address, amount: new BN(10)})
+      const tx = await merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient})
+      expectEvent(tx, 'MerkleClaim', {account: recipient, erc20: erc20.address, amount: new BN(10)})
       assert.equal(await erc20.balanceOf(recipient), 10)
       assert.equal(await erc20.balanceOf(merkleBox.address), 990)
+    })
+
+    it('recipient can claim on behalf of other account', async () => {
+      const r = receipt(recipient2, 20)
+      const proof = merkleTree.getHexProof(r)
+      const tx = await merkleBox.claim(merkleRoot, recipient2, 20, proof, {from: recipient})
+      expectEvent(tx, 'MerkleClaim', {account: recipient2, erc20: erc20.address, amount: new BN(20)})
+      assert.equal(await erc20.balanceOf(recipient2), 20)
+      assert.equal(await erc20.balanceOf(merkleBox.address), 980)
     })
 
     it('recipient cannot claim twice', async () => {
       const r = receipt(recipient, 10)
       const proof = merkleTree.getHexProof(r)
-      await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
-      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: recipient}), 'Already claimed')
+      await merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient})
+      await expectRevert(merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient}), 'Already claimed')
     })
 
-    it('claimable() returns true for a valid and unclaimed Merkle proof', async () => {
+    it('isClaimable() returns true for a valid and unclaimed Merkle proof', async () => {
       const r = receipt(recipient, 10)
       const proof = merkleTree.getHexProof(r)
-      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: recipient})).to.equal(true)
+      expect(await merkleBox.isClaimable(merkleRoot, recipient, 10, proof, {from: recipient})).to.equal(true)
     })
 
-    it('claimable() returns false for a valid but already claimed Merkle proof', async () => {
+    it('isClaimable() returns false for a valid but already claimed Merkle proof', async () => {
       const r = receipt(recipient, 10)
       const proof = merkleTree.getHexProof(r)
-      await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
-      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: recipient})).to.equal(false)
+      await merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient})
+      expect(await merkleBox.isClaimable(merkleRoot, recipient, 10, proof, {from: recipient})).to.equal(false)
     })
 
     it('reverts when claiming with an invalid Merkle proof', async () => {
       const r = receipt(recipient, 42)
       const newTree = new MerkleTree([receipt(recipient, 42), receipt(recipient2, 23)])
       const proof = newTree.getHexProof(r)
-      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: recipient}), 'Claim not found')
+      await expectRevert(merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient}), 'Claim not found')
     })
 
-    it('claimable() returns false for an invalid Merkle proof', async () => {
+    it('isClaimable() returns false for an invalid Merkle proof', async () => {
       const r = receipt(recipient, 42)
       const newTree = new MerkleTree([receipt(recipient, 42), receipt(recipient2, 23)])
       const proof = newTree.getHexProof(r)
-      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: recipient})).to.equal(false)
+      expect(await merkleBox.isClaimable(merkleRoot, recipient, 10, proof, {from: recipient})).to.equal(false)
     })
 
     it('reverts when claiming with a Merkle proof of invalid length', async () => {
       const r = receipt(recipient, 10)
       let proof = merkleTree.getHexProof(r)
       proof = proof.slice(0, proof.length - 5)
-      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: recipient}), 'Claim not found')
+      await expectRevert(merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient}), 'Claim not found')
     })
 
-    it('claimable() returns false for a Merkle proof of invalid length', async () => {
+    it('isClaimable() returns false for a Merkle proof of invalid length', async () => {
       const r = receipt(recipient, 10)
       let proof = merkleTree.getHexProof(r)
       proof = proof.slice(0, proof.length - 5)
-      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: recipient})).to.equal(false)
+      expect(await merkleBox.isClaimable(merkleRoot, recipient, 10, proof, {from: recipient})).to.equal(false)
     })
 
     it('reverts when holding is not found for given Merkle root', async () => {
@@ -191,15 +206,15 @@ contract('MerkleBox', async (accounts) => {
       const merkleRoot2 = merkleTree2.getHexRoot()
       const r = receipt(recipient, 10)
       const proof = merkleTree2.getHexProof(r)
-      await expectRevert(merkleBox.claim(merkleRoot2, 10, proof, {from: recipient}), 'Holding not found')
+      await expectRevert(merkleBox.claim(merkleRoot2, recipient, 10, proof, {from: recipient}), 'Holding not found')
     })
 
-    it('claimable() returns false when holding not found for given Merkle root', async () => {
+    it('isClaimable() returns false when holding is not found for given Merkle root', async () => {
       const merkleTree2 = new MerkleTree([receipt(recipient, 10), receipt(recipient2, 25)])
       const merkleRoot2 = merkleTree2.getHexRoot()
       const r = receipt(recipient, 10)
       const proof = merkleTree2.getHexProof(r)
-      expect(await merkleBox.claimable(merkleRoot2, 10, proof, {from: recipient})).to.equal(false)
+      expect(await merkleBox.isClaimable(merkleRoot2, recipient, 10, proof, {from: recipient})).to.equal(false)
     })
 
     context('when unlock time is reached', async () => {
@@ -233,8 +248,8 @@ contract('MerkleBox', async (accounts) => {
       it('recipient can claim', async () => {
         const r = receipt(recipient, 10)
         const proof = merkleTree.getHexProof(r)
-        const tx = await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
-        expectEvent(tx, 'MerkleClaim', {sender: recipient, erc20: erc20.address, amount: new BN(10)})
+        const tx = await merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient})
+        expectEvent(tx, 'MerkleClaim', {account: recipient, erc20: erc20.address, amount: new BN(10)})
         assert.equal(await erc20.balanceOf(recipient), 10)
       })
     })
@@ -248,20 +263,20 @@ contract('MerkleBox', async (accounts) => {
       await erc20.approve(merkleBox.address, 29, {from: funder})
       await merkleBox.newClaimsGroup(erc20.address, 29, merkleRoot, unlockTime, {from: funder})
       const proof = merkleTree.getHexProof(receipt(recipient2, 20))
-      await merkleBox.claim(merkleRoot, 20, proof, {from: recipient2})
+      await merkleBox.claim(merkleRoot, recipient2, 20, proof, {from: recipient2})
     })
 
     it('cannot claim when not enough balance', async () => {
       const proof = merkleTree.getHexProof(receipt(recipient, 10))
-      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: recipient}), 'Claim under-funded by funder.')
+      await expectRevert(merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient}), 'Claim under-funded by funder.')
     })
 
     it('can claim after funds are added', async () => {
       await erc20.approve(merkleBox.address, 1, {from: funder2})
       await merkleBox.addFunds(merkleRoot, 1, {from: funder2})
       const proof = merkleTree.getHexProof(receipt(recipient, 10))
-      const tx = await merkleBox.claim(merkleRoot, 10, proof, {from: recipient})
-      expectEvent(tx, 'MerkleClaim', {sender: recipient, erc20: erc20.address, amount: new BN(10)})
+      const tx = await merkleBox.claim(merkleRoot, recipient, 10, proof, {from: recipient})
+      expectEvent(tx, 'MerkleClaim', {account: recipient, erc20: erc20.address, amount: new BN(10)})
       assert.equal(await erc20.balanceOf(recipient), 10)
     })
   })
@@ -275,14 +290,14 @@ contract('MerkleBox', async (accounts) => {
       await merkleBox.newClaimsGroup(erc20.address, 30, merkleRoot, unlockTime, {from: funder})
     })
 
-    it('reverts when holding owner calls claim', async () => {
+    it('reverts when holding owner tries to claim', async () => {
       const proof = merkleTree.getHexProof(receipt(funder, 10))
-      await expectRevert(merkleBox.claim(merkleRoot, 10, proof, {from: funder}), 'Holding owner cannot claim')
+      await expectRevert(merkleBox.claim(merkleRoot, funder, 10, proof, {from: recipient}), 'Holding owner cannot claim')
     })
 
-    it('claimable() returns false when holding not found for given Merkle root', async () => {
+    it('isClaimable() returns false when holding owner tries to claim', async () => {
       const proof = merkleTree.getHexProof(receipt(funder, 10))
-      expect(await merkleBox.claimable(merkleRoot, 10, proof, {from: funder})).to.equal(false)
+      expect(await merkleBox.isClaimable(merkleRoot, funder, 10, proof, {from: recipient})).to.equal(false)
     })
   })
 })
