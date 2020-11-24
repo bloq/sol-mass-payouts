@@ -17,7 +17,7 @@ contract MerkleBox is IMerkleBox {
         address erc20; // claim-able ERC20 asset
         uint256 balance; // amount of token held currently
         bytes32 merkleRoot; // root of claims merkle tree
-        uint256 withdrawLock; // withdraw forbidden before this time
+        uint256 withdrawUnlockTime; // withdraw forbidden before this time
     }
 
     mapping(bytes32 => Holding) public holdings;
@@ -54,7 +54,7 @@ contract MerkleBox is IMerkleBox {
         // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
         require(holding.owner != address(0), "Holding does not exist");
-        require(block.timestamp >= holding.withdrawLock, "Holdings may not be withdrawn");
+        require(block.timestamp >= holding.withdrawUnlockTime, "Holdings may not be withdrawn");
         require(holding.owner == msg.sender, "Only owner may withdraw");
 
         // calculate amount to withdraw.  handle withdraw-all.
@@ -64,11 +64,11 @@ contract MerkleBox is IMerkleBox {
         }
         require(amount <= holding.balance, "Insufficient balance");
 
-        // transfer token to this contract
-        token.safeTransfer(msg.sender, amount);
-
         // update holdings record
         holding.balance = holding.balance.sub(amount);
+
+        // transfer token to this contract
+        token.safeTransfer(msg.sender, amount);
 
         emit MerkleFundUpdate(msg.sender, merkleRoot, amount, true);
     }
@@ -77,12 +77,12 @@ contract MerkleBox is IMerkleBox {
         address erc20,
         uint256 amount,
         bytes32 merkleRoot,
-        uint256 withdrawLockTime
+        uint256 withdrawUnlockTime
     ) external override {
         // prelim. parameter checks
         require(erc20 != address(0), "Invalid ERC20 address");
         require(merkleRoot != 0, "Merkle cannot be zero");
-        require(withdrawLockTime >= block.timestamp + LOCKING_PERIOD, "Holing lock must exceed minimum lock period");
+        require(withdrawUnlockTime >= block.timestamp + LOCKING_PERIOD, "Holing lock must exceed minimum lock period");
 
         // reference our struct storage
         Holding storage holding = holdings[merkleRoot];
@@ -105,17 +105,32 @@ contract MerkleBox is IMerkleBox {
         holding.erc20 = erc20;
         holding.balance = amount;
         holding.merkleRoot = merkleRoot;
-        holding.withdrawLock = withdrawLockTime;
+        holding.withdrawUnlockTime = withdrawUnlockTime;
 
-        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawLockTime);
+        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawUnlockTime);
     }
 
-    function claimable(
+    function isClaimable(
         bytes32 merkleRoot,
+        address account,
         uint256 amount,
         bytes32[] memory proof
     ) external view override returns (bool) {
-        bytes32 leaf = _leafHash(amount);
+        // holding exists?
+        Holding memory holding = holdings[merkleRoot];
+        if (holding.owner == address(0)) {
+            return false;
+        }
+        //  holding owner?
+        if (holding.owner == account) {
+            return false;
+        }
+        // sufficient balance exists?   (funder may have under-funded)
+        if (holding.balance < amount) {
+            return false;
+        }
+
+        bytes32 leaf = _leafHash(account, amount);
         // already claimed?
         if (leafClaimed[merkleRoot][leaf]) {
             return false;
@@ -124,28 +139,26 @@ contract MerkleBox is IMerkleBox {
         if (!MerkleProof.verify(proof, merkleRoot, leaf)) {
             return false;
         }
-        // holding exists?
-        Holding memory holding = holdings[merkleRoot];
-        if (holding.owner == address(0)) {
-            return false;
-        }
-        //  holding owner?
-        if (holding.owner == msg.sender) {
-            return false;
-        }
-        // sufficient balance exists?   (funder may have under-funded)
-        if (holding.balance < amount) {
-            return false;
-        }
         return true;
     }
 
     function claim(
         bytes32 merkleRoot,
+        address account,
         uint256 amount,
         bytes32[] memory proof
     ) external override {
-        bytes32 leaf = _leafHash(amount);
+        // holding exists?
+        Holding storage holding = holdings[merkleRoot];
+        require(holding.owner != address(0), "Holding not found");
+
+        //  holding owner?
+        require(holding.owner != account, "Holding owner cannot claim");
+
+        // sufficient balance exists?   (funder may have under-funded)
+        require(holding.balance >= amount, "Claim under-funded by funder.");
+
+        bytes32 leaf = _leafHash(account, amount);
 
         // already spent?
         require(leafClaimed[merkleRoot][leaf] == false, "Already claimed");
@@ -153,29 +166,19 @@ contract MerkleBox is IMerkleBox {
         // merkle proof valid?
         require(MerkleProof.verify(proof, merkleRoot, leaf) == true, "Claim not found");
 
-        // holding exists?
-        Holding storage holding = holdings[merkleRoot];
-        require(holding.owner != address(0), "Holding not found");
-
-        //  holding owner?
-        require(holding.owner != msg.sender, "Holding owner cannot claim");
-
-        // sufficient balance exists?   (funder may have under-funded)
-        require(holding.balance >= amount, "Claim under-funded by funder.");
-
         // update state
         leafClaimed[merkleRoot][leaf] = true;
         holding.balance = holding.balance.sub(amount);
-        IERC20(holding.erc20).safeTransfer(msg.sender, amount);
+        IERC20(holding.erc20).safeTransfer(account, amount);
 
-        emit MerkleClaim(msg.sender, holding.erc20, amount);
+        emit MerkleClaim(account, holding.erc20, amount);
     }
 
     //////////////////////////////////////////////////////////
 
     // generate hash of (claim holder, amount)
     // claim holder must be the caller
-    function _leafHash(uint256 amount) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(msg.sender, amount));
+    function _leafHash(address account, uint256 amount) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(account, amount));
     }
 }
