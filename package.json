@@ -11,6 +11,7 @@
     "lint": "eslint ./test/*",
     "lint:fix": "eslint --fix ./test --ext .js",
     "truffle": "truffle",
+    "test": "truffle test",
     "solhint": "solhint './contracts/**/*.sol'",
     "solhint:fix": "prettier --write 'contracts/**/*.sol'"
   },
@@ -41,7 +42,7 @@
     "solc": "0.6.12",
     "solhint": "^2.3.1",
     "solhint-plugin-prettier": "0.0.4",
-    "truffle": "^5.1.48"
+    "truffle": "5.1.48"
   },
   "pre-commit": [
     "solhint",
