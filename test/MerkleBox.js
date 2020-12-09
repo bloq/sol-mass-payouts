@@ -144,6 +144,12 @@ contract('MerkleBox', async (accounts) => {
       assert.equal(await erc20.balanceOf(merkleBox.address), 990)
     })
 
+    it('revert if amount is wrong', async () => {
+      const r = receipt(recipient, 10)
+      const proof = merkleTree.getHexProof(r)
+      await expectRevert(merkleBox.claim(merkleRoot, recipient, 11, proof, {from: recipient}), 'Claim not found')
+    })
+
     it('recipient can claim on behalf of other account', async () => {
       const r = receipt(recipient2, 20)
       const proof = merkleTree.getHexProof(r)
