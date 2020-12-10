@@ -23,19 +23,11 @@ contract('MultiTransfer', async accounts => {
   })
 
   it('reverts if ERC20 address is zero', async () => {
-    await expectRevert(mt.multiTransfer(constants.ZERO_ADDRESS, 1000, [], {from: sender}), 'ERC20 address invalid')
+    await expectRevert(mt.multiTransfer(constants.ZERO_ADDRESS, [], {from: sender}), 'ERC20 address invalid')
   })
 
-  it('reverts if amount is zero', async () => {
-    await expectRevert(mt.multiTransfer(erc20.address, 0, [], {from: sender}), 'Input amount invalid')
-  })
-
-  it('reverts if total is less than amount', async () => {
-    await expectRevert(mt.multiTransfer(erc20.address, 1000, [e(receiver1, 500), e(receiver2, 300), e(receiver3, 199)], {from: sender}), 'Output amt must equal input amt')
-  })
-
-  it('reverts if total is more than amount', async () => {
-    await expectRevert(mt.multiTransfer(erc20.address, 999, [e(receiver1, 500), e(receiver2, 300), e(receiver3, 200)], {from: sender}), 'Output amt must equal input amt')
+  it('reverts if amount sent is too large', async () => {
+    await expectRevert(mt.multiTransfer(erc20.address, [e(receiver1, 500), e(receiver2, 1300), e(receiver3, 200)], {from: sender}), 'ERC20: transfer amount exceeds balance')
   })
 
   it('balances are correct', async () => {
@@ -43,7 +35,7 @@ contract('MultiTransfer', async accounts => {
     assert.equal(await erc20.balanceOf(receiver1), 0)
     assert.equal(await erc20.balanceOf(receiver2), 0)
     assert.equal(await erc20.balanceOf(receiver3), 0)
-    await mt.multiTransfer(erc20.address, 1000, [e(receiver1, 500), e(receiver2, 300), e(receiver3, 200)], {from: sender})
+    await mt.multiTransfer(erc20.address, [e(receiver1, 500), e(receiver2, 300), e(receiver3, 200)], {from: sender})
     assert.equal(await erc20.balanceOf(sender), 0)
     assert.equal(await erc20.balanceOf(receiver1), 500)
     assert.equal(await erc20.balanceOf(receiver2), 300)
