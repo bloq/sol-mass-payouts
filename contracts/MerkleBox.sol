@@ -20,16 +20,18 @@ contract MerkleBox is IMerkleBox {
         uint256 withdrawUnlockTime; // withdraw forbidden before this time
     }
 
-    mapping(bytes32 => Holding) public holdings;
+    mapping(uint256 => Holding) public holdings;
+    mapping(address => uint256[]) public claimGroupIds;
     mapping(bytes32 => mapping(bytes32 => bool)) public leafClaimed;
     uint256 public constant LOCKING_PERIOD = 30 days;
+    uint256 public claimGroupCount;
 
-    function addFunds(bytes32 merkleRoot, uint256 amount) external override {
+    function addFunds(uint256 claimGroupId, uint256 amount) external override {
         // prelim. parameter checks
         require(amount != 0, "Invalid amount");
 
         // reference our struct storage
-        Holding storage holding = holdings[merkleRoot];
+        Holding storage holding = holdings[claimGroupId];
         require(holding.owner != address(0), "Holding does not exist");
 
         // calculate amount to deposit.  handle deposit-all.
@@ -47,12 +49,12 @@ contract MerkleBox is IMerkleBox {
         // update holdings record
         holding.balance = holding.balance.add(amount);
 
-        emit MerkleFundUpdate(msg.sender, merkleRoot, amount, false);
+        emit MerkleFundUpdate(msg.sender, holding.merkleRoot, claimGroupId, amount, false);
     }
 
-    function withdrawFunds(bytes32 merkleRoot, uint256 amount) external override {
+    function withdrawFunds(uint256 claimGroupId, uint256 amount) external override {
         // reference our struct storage
-        Holding storage holding = holdings[merkleRoot];
+        Holding storage holding = holdings[claimGroupId];
         require(holding.owner != address(0), "Holding does not exist");
         require(block.timestamp >= holding.withdrawUnlockTime, "Holdings may not be withdrawn");
         require(holding.owner == msg.sender, "Only owner may withdraw");
@@ -70,7 +72,7 @@ contract MerkleBox is IMerkleBox {
         // transfer token to this contract
         token.safeTransfer(msg.sender, amount);
 
-        emit MerkleFundUpdate(msg.sender, merkleRoot, amount, true);
+        emit MerkleFundUpdate(msg.sender, holding.merkleRoot, claimGroupId, amount, true);
     }
 
     function newClaimsGroup(
@@ -84,9 +86,9 @@ contract MerkleBox is IMerkleBox {
         require(merkleRoot != 0, "Merkle cannot be zero");
         require(withdrawUnlockTime >= block.timestamp + LOCKING_PERIOD, "Holing lock must exceed minimum lock period");
 
+        claimGroupCount++;
         // reference our struct storage
-        Holding storage holding = holdings[merkleRoot];
-        require(holding.owner == address(0), "Holding already exists");
+        Holding storage holding = holdings[claimGroupCount];
 
         // calculate amount to deposit.  handle deposit-all.
         IERC20 token = IERC20(erc20);
@@ -106,18 +108,18 @@ contract MerkleBox is IMerkleBox {
         holding.balance = amount;
         holding.merkleRoot = merkleRoot;
         holding.withdrawUnlockTime = withdrawUnlockTime;
-
-        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, withdrawUnlockTime);
+        claimGroupIds[msg.sender].push(claimGroupCount);
+        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, claimGroupCount, withdrawUnlockTime);
     }
 
     function isClaimable(
-        bytes32 merkleRoot,
+        uint256 claimGroupId,
         address account,
         uint256 amount,
         bytes32[] memory proof
     ) external view override returns (bool) {
         // holding exists?
-        Holding memory holding = holdings[merkleRoot];
+        Holding memory holding = holdings[claimGroupId];
         if (holding.owner == address(0)) {
             return false;
         }
@@ -132,24 +134,24 @@ contract MerkleBox is IMerkleBox {
 
         bytes32 leaf = _leafHash(account, amount);
         // already claimed?
-        if (leafClaimed[merkleRoot][leaf]) {
+        if (leafClaimed[holding.merkleRoot][leaf]) {
             return false;
         }
         // merkle proof is invalid or claim not found
-        if (!MerkleProof.verify(proof, merkleRoot, leaf)) {
+        if (!MerkleProof.verify(proof, holding.merkleRoot, leaf)) {
             return false;
         }
         return true;
     }
 
     function claim(
-        bytes32 merkleRoot,
+        uint256 claimGroupId,
         address account,
         uint256 amount,
         bytes32[] memory proof
     ) external override {
         // holding exists?
-        Holding storage holding = holdings[merkleRoot];
+        Holding storage holding = holdings[claimGroupId];
         require(holding.owner != address(0), "Holding not found");
 
         //  holding owner?
@@ -161,17 +163,21 @@ contract MerkleBox is IMerkleBox {
         bytes32 leaf = _leafHash(account, amount);
 
         // already spent?
-        require(leafClaimed[merkleRoot][leaf] == false, "Already claimed");
+        require(leafClaimed[holding.merkleRoot][leaf] == false, "Already claimed");
 
         // merkle proof valid?
-        require(MerkleProof.verify(proof, merkleRoot, leaf) == true, "Claim not found");
+        require(MerkleProof.verify(proof, holding.merkleRoot, leaf) == true, "Claim not found");
 
         // update state
-        leafClaimed[merkleRoot][leaf] = true;
+        leafClaimed[holding.merkleRoot][leaf] = true;
         holding.balance = holding.balance.sub(amount);
         IERC20(holding.erc20).safeTransfer(account, amount);
 
         emit MerkleClaim(account, holding.erc20, amount);
+    }
+
+    function getClaimGroupIds(address owner) public view returns (uint256[] memory ids) {
+        ids = claimGroupIds[owner];
     }
 
     //////////////////////////////////////////////////////////
