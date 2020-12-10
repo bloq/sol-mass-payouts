@@ -6,10 +6,12 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
 import "./interfaces/IMerkleBox.sol";
+import "./interfaces/IERC20WithPermit.sol";
 
 contract MerkleBox is IMerkleBox {
     using MerkleProof for MerkleProof;
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20WithPermit;
     using SafeMath for uint256;
 
     struct Holding {
@@ -44,6 +46,41 @@ contract MerkleBox is IMerkleBox {
         require(amount != 0, "Amount cannot be zero");
 
         // transfer token to this contract
+        token.safeTransferFrom(msg.sender, address(this), amount);
+
+        // update holdings record
+        holding.balance = holding.balance.add(amount);
+
+        emit MerkleFundUpdate(msg.sender, holding.merkleRoot, claimGroupId, amount, false);
+    }
+
+    function addFundsWithPermit(
+        uint256 claimGroupId,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        // prelim. parameter checks
+        require(amount != 0, "Invalid amount");
+
+        // reference our struct storage
+        Holding storage holding = holdings[claimGroupId];
+        require(holding.owner != address(0), "Holding does not exist");
+
+        // calculate amount to deposit.  handle deposit-all.
+        IERC20WithPermit token = IERC20WithPermit(holding.erc20);
+
+        uint256 balance = token.balanceOf(msg.sender);
+        if (amount == uint256(-1)) {
+            amount = balance;
+        }
+        require(amount <= balance, "Insufficient balance");
+        require(amount != 0, "Amount cannot be zero");
+
+        // transfer token to this contract
+        token.permit(msg.sender, address(this), amount, deadline, v, r, s);
         token.safeTransferFrom(msg.sender, address(this), amount);
 
         // update holdings record
