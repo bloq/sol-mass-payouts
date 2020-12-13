@@ -12,10 +12,7 @@ contract MultiTransfer is IMultiTransfer {
     /// @dev Left 160 bits are the recipient address and the right 96 bits are the token amount.
     /// @param bits array of uint
     /// @return true/false
-    function multiTransfer(
-        address erc20,
-        uint256[] calldata bits
-    ) external override returns (bool) {
+    function multiTransfer(address erc20, uint256[] calldata bits) external override returns (bool) {
         require(erc20 != address(0), "ERC20 address invalid");
 
         IERC20 token = IERC20(erc20);
