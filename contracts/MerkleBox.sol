@@ -24,7 +24,7 @@ contract MerkleBox is IMerkleBox {
 
     mapping(uint256 => Holding) public holdings;
     mapping(address => uint256[]) public claimGroupIds;
-    mapping(bytes32 => mapping(bytes32 => bool)) public leafClaimed;
+    mapping(uint256 => mapping(bytes32 => bool)) public leafClaimed;
     uint256 public constant LOCKING_PERIOD = 30 days;
     uint256 public claimGroupCount;
 
@@ -171,7 +171,7 @@ contract MerkleBox is IMerkleBox {
 
         bytes32 leaf = _leafHash(account, amount);
         // already claimed?
-        if (leafClaimed[holding.merkleRoot][leaf]) {
+        if (leafClaimed[claimGroupId][leaf]) {
             return false;
         }
         // merkle proof is invalid or claim not found
@@ -200,13 +200,13 @@ contract MerkleBox is IMerkleBox {
         bytes32 leaf = _leafHash(account, amount);
 
         // already spent?
-        require(leafClaimed[holding.merkleRoot][leaf] == false, "Already claimed");
+        require(leafClaimed[claimGroupId][leaf] == false, "Already claimed");
 
         // merkle proof valid?
         require(MerkleProof.verify(proof, holding.merkleRoot, leaf) == true, "Claim not found");
 
         // update state
-        leafClaimed[holding.merkleRoot][leaf] = true;
+        leafClaimed[claimGroupId][leaf] = true;
         holding.balance = holding.balance.sub(amount);
         IERC20(holding.erc20).safeTransfer(account, amount);
 

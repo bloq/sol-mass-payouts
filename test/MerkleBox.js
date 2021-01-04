@@ -18,7 +18,7 @@ contract('MerkleBox', async (accounts) => {
 
   beforeEach(async () => {
     merkleBox = await MerkleBox.new()
-    erc20 = await ERC20Mock.new('Test', 'TEST', funder, 2000)
+    erc20 = await ERC20Mock.new('Test', 'TEST', funder, 3000)
     await erc20.transfer(funder2, 1000, {from: funder})
     unlockTime = (await time.latest()).add(time.duration.weeks(5))
   })
@@ -61,7 +61,7 @@ contract('MerkleBox', async (accounts) => {
         merkleRoot: merkleRoot,
         withdrawUnlockTime: unlockTime
       })
-      assert.equal(await erc20.balanceOf(funder), 0)
+      assert.equal(await erc20.balanceOf(funder), 1000)
       assert.equal(await erc20.balanceOf(merkleBox.address), 1000)
     })
 
@@ -82,8 +82,8 @@ contract('MerkleBox', async (accounts) => {
     })
 
     it('reverts if insufficient balance', async () => {
-      await erc20.approve(merkleBox.address, 1000, {from: funder})
-      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1001, merkleRoot, unlockTime, {from: funder}), 'Insufficient balance')
+      await erc20.approve(merkleBox.address, 2000, {from: funder})
+      await expectRevert(merkleBox.newClaimsGroup(erc20.address, 2001, merkleRoot, unlockTime, {from: funder}), 'Insufficient balance')
     })
 
     it('reverts if amount is zero', async () => {
@@ -146,6 +146,22 @@ contract('MerkleBox', async (accounts) => {
       expectEvent(tx, 'MerkleClaim', {account: recipient, erc20: erc20.address, amount: new BN(10)})
       assert.equal(await erc20.balanceOf(recipient), 10)
       assert.equal(await erc20.balanceOf(merkleBox.address), 990)
+    })
+
+    it('recipient can claim for more than one claimsGroupId with same merkleRoot', async () => {
+      const r = receipt(recipient, 10)
+      const proof = merkleTree.getHexProof(r)
+      await erc20.approve(merkleBox.address, 1000, {from: funder})
+      await merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, unlockTime, {from: funder})
+      const claimGroupId2 = (await merkleBox.claimGroupCount()).toString()
+      let tx = await merkleBox.claim(claimGroupId, recipient, 10, proof, {from: recipient})
+      expectEvent(tx, 'MerkleClaim', {account: recipient, erc20: erc20.address, amount: new BN(10)})
+      assert.equal(await erc20.balanceOf(recipient), 10)
+      assert.equal(await erc20.balanceOf(merkleBox.address), 1990)
+      tx = await merkleBox.claim(claimGroupId2, recipient, 10, proof, {from: recipient})
+      expectEvent(tx, 'MerkleClaim', {account: recipient, erc20: erc20.address, amount: new BN(10)})
+      assert.equal(await erc20.balanceOf(recipient), 20)
+      assert.equal(await erc20.balanceOf(merkleBox.address), 1980)
     })
 
     it('revert if amount is wrong', async () => {
@@ -233,7 +249,7 @@ contract('MerkleBox', async (accounts) => {
       it('funder can withdraw', async () => {
         const tx = await merkleBox.withdrawFunds(claimGroupId, 50, {from: funder})
         expectEvent(tx, 'MerkleFundUpdate', {sender: funder, merkleRoot: merkleRoot, amount: new BN(50), withdraw: true})
-        assert.equal(await erc20.balanceOf(funder), 50)
+        assert.equal(await erc20.balanceOf(funder), 1050)
         assert.equal(await erc20.balanceOf(merkleBox.address), 950)
       })
 
@@ -241,7 +257,7 @@ contract('MerkleBox', async (accounts) => {
         await merkleBox.withdrawFunds(claimGroupId, 50, {from: funder})
         const tx = await merkleBox.withdrawFunds(claimGroupId, -1, {from: funder})
         expectEvent(tx, 'MerkleFundUpdate', {sender: funder, merkleRoot, claimGroupId, amount: new BN(950), withdraw: true})
-        assert.equal(await erc20.balanceOf(funder), 1000)
+        assert.equal(await erc20.balanceOf(funder), 2000)
         assert.equal(await erc20.balanceOf(merkleBox.address), 0)
       })
 
