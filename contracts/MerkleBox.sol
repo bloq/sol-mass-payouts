@@ -56,12 +56,13 @@ contract MerkleBox is IMerkleBox {
 
     function addFundsWithPermit(
         uint256 claimGroupId,
+        address funder,
         uint256 amount,
         uint256 deadline,
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external {
+    ) external override {
         // prelim. parameter checks
         require(amount != 0, "Invalid amount");
 
@@ -71,8 +72,7 @@ contract MerkleBox is IMerkleBox {
 
         // calculate amount to deposit.  handle deposit-all.
         IERC20WithPermit token = IERC20WithPermit(holding.erc20);
-
-        uint256 balance = token.balanceOf(msg.sender);
+        uint256 balance = token.balanceOf(funder);
         if (amount == uint256(-1)) {
             amount = balance;
         }
@@ -80,13 +80,13 @@ contract MerkleBox is IMerkleBox {
         require(amount != 0, "Amount cannot be zero");
 
         // transfer token to this contract
-        token.permit(msg.sender, address(this), amount, deadline, v, r, s);
-        token.safeTransferFrom(msg.sender, address(this), amount);
+        token.permit(funder, address(this), amount, deadline, v, r, s);
+        token.safeTransferFrom(funder, address(this), amount);
 
         // update holdings record
         holding.balance = holding.balance.add(amount);
 
-        emit MerkleFundUpdate(msg.sender, holding.merkleRoot, claimGroupId, amount, false);
+        emit MerkleFundUpdate(funder, holding.merkleRoot, claimGroupId, amount, false);
     }
 
     function withdrawFunds(uint256 claimGroupId, uint256 amount) external override {
@@ -117,7 +117,7 @@ contract MerkleBox is IMerkleBox {
         uint256 amount,
         bytes32 merkleRoot,
         uint256 withdrawUnlockTime
-    ) external override {
+    ) external override returns (uint256) {
         // prelim. parameter checks
         require(erc20 != address(0), "Invalid ERC20 address");
         require(merkleRoot != 0, "Merkle cannot be zero");
@@ -147,6 +147,7 @@ contract MerkleBox is IMerkleBox {
         holding.withdrawUnlockTime = withdrawUnlockTime;
         claimGroupIds[msg.sender].push(claimGroupCount);
         emit NewMerkle(msg.sender, erc20, amount, merkleRoot, claimGroupCount, withdrawUnlockTime);
+        return claimGroupCount;
     }
 
     function isClaimable(

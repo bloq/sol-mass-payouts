@@ -6,7 +6,7 @@ const ERC20Mock = artifacts.require('mocks/ERC20Mock')
 const {expectRevert, constants} = require('@openzeppelin/test-helpers')
 const {toBuffer, bufferToHex} = require('ethereumjs-util')
 
-function e (receiver, amount) {
+function e(receiver, amount) {
   const a = toBuffer(amount)
   return bufferToHex(Buffer.concat([toBuffer(receiver), Buffer.alloc(12 - a.length), a]))
 }
