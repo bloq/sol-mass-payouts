@@ -8,7 +8,7 @@ const {ecsign} = require('ethereumjs-util')
 const {MaxUint256} = require('ethers/constants')
 const {expectRevert, expectEvent, BN, constants, time} = require('@openzeppelin/test-helpers')
 
-function receipt(recipient, amount) {
+function receipt (recipient, amount) {
   return web3.utils.soliditySha3({t: 'address', v: recipient}, {t: 'uint256', v: amount})
 }
 
@@ -20,17 +20,16 @@ contract('MerkleBox', async (accounts) => {
   beforeEach(async () => {
     merkleBox = await MerkleBox.new()
     erc20 = await ERC20Mock.new()
-    await erc20.mintInternal(funder, 1000);
-    await erc20.mintInternal(funder2, 1000);
+    await erc20.mintInternal(funder, 1000)
+    await erc20.mintInternal(funder2, 1000)
     funder3PrivateKey = '0xa11a58ba8887796d1a7bc2a6107a98e0befd2b10c8846a39f39c05c6a976e725'
     funder3 = '0xA73Ead6953c1464d6F7Ce14E718cc8d8EE531e05'
-    await erc20.mintInternal(funder3, 1000);
+    await erc20.mintInternal(funder3, 1000)
     unlockTime = (await time.latest()).add(time.duration.weeks(5))
   })
 
   context('before a claims group is created', async () => {
     const merkleTree = new MerkleTree([receipt(recipient, 10), receipt(recipient2, 20)])
-    const merkleRoot = merkleTree.getHexRoot()
 
     it('reverts when attempting to add funds to unknown claims group', async () => {
       await erc20.approve(merkleBox.address, 50, {from: funder2})
@@ -145,7 +144,7 @@ contract('MerkleBox', async (accounts) => {
     it('anyone can add funds with permit', async () => {
       const deadline = MaxUint256
       const digest = await erc20.getPermitDigest(funder3, merkleBox.address, 50, deadline)
-      const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), new Buffer(funder3PrivateKey.slice(2), 'hex'))
+      const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(funder3PrivateKey.slice(2), 'hex'))
       const tx = await merkleBox.addFundsWithPermit(claimGroupId, funder3, 50, deadline, v, r, s, {from: other})
       expectEvent(tx, 'MerkleFundUpdate', {funder: funder3, merkleRoot, claimGroupId, amount: new BN(50), withdraw: false})
       assert.equal(await erc20.balanceOf(funder3), 950)
@@ -155,7 +154,7 @@ contract('MerkleBox', async (accounts) => {
     it('reverts when attempting to add funds with amount = 0', async () => {
       const deadline = MaxUint256
       const digest = await erc20.getPermitDigest(funder3, merkleBox.address, 0, deadline)
-      const { v, r, s } = ecsign(Buffer.from(digest.slice(2), 'hex'), new Buffer(funder3PrivateKey.slice(2), 'hex'))
+      const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(funder3PrivateKey.slice(2), 'hex'))
       await expectRevert(merkleBox.addFundsWithPermit(claimGroupId, funder3, 0, deadline, v, r, s, {from: other}), 'Invalid amount')
     })
 
@@ -415,6 +414,5 @@ contract('MerkleBox', async (accounts) => {
       assert.equal(await erc20.balanceOf(recipient), 20)
       assert.equal(await erc20.balanceOf(merkleBox.address), 980)
     })
-
   })
 })
