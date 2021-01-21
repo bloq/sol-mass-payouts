@@ -15,7 +15,16 @@ interface IMerkleBox {
     event MerkleFundUpdate(address indexed funder, bytes32 indexed merkleRoot, uint256 claimGroupId, uint256 amount, bool withdraw);
 
     function addFunds(uint256 claimGroupId, uint256 amount) external;
-    function addFundsWithPermit(uint256 claimGroupId, address funder, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    function addFundsWithPermit(
+        uint256 claimGroupId,
+        address funder,
+        uint256 amount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 
     function withdrawFunds(uint256 claimGroupId, uint256 amount) external;
 

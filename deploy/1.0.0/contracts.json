@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "networks": {
+    "mainnet": {
+      "MerkleBox": "0x469c9fB59eBc19E141927c0308d98F2A9C400D2f",
+      "MultiTransfer": "0x133aEa9C32015499E41D5CB756A327138C80C80E"
+    },
+    "ropsten": {
+      "MerkleBox": "0x0EFbFE4979da0Cb457a6a80Db6F3da6861E120fc",
+      "MultiTransfer": "0xc614136d6c5AB85bc2aCF0ec2652351642d7F54E"
+    }
+  }
+}
