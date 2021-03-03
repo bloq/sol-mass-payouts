@@ -9,7 +9,8 @@ interface IMerkleBox {
         uint256 amount,
         bytes32 indexed merkleRoot,
         uint256 claimGroupId,
-        uint256 withdrawUnlockTime
+        uint256 withdrawUnlockTime,
+        string memo
     );
     event MerkleClaim(address indexed account, address indexed erc20, uint256 amount);
     event MerkleFundUpdate(address indexed funder, bytes32 indexed merkleRoot, uint256 claimGroupId, uint256 amount, bool withdraw);
@@ -32,7 +33,8 @@ interface IMerkleBox {
         address erc20,
         uint256 amount,
         bytes32 merkleRoot,
-        uint256 withdrawUnlockTime
+        uint256 withdrawUnlockTime,
+        string calldata memo
     ) external returns (uint256);
 
     function isClaimable(
