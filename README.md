@@ -36,7 +36,7 @@ Provided account address must be the address in the claim, and the claim must be
 ### Funder: Create new claims group
 
 Store a merkle root, and associated ERC20 funds, on chain.
-Must provide withdraw unlock time and its value must be atleast 30 days higher than claim group create time. 
+Must provide withdraw unlock time and its value must be atleast 30 days higher than claim group create time.
 
 Can also provide a memo string for adding arbitrary notes to the group.
 
@@ -104,8 +104,18 @@ maximum, or an arbitrary time millions of years in the future.
    DEPLOYMENT_ACCOUNT_KEY =  "my mnemonic phrase"
    ```
 
-4. Deploy you own contracts if want to do arb- 
+4. Deploy you own contracts if want to do arb-
 
-   ``` 
+   ```
    truffle migrate --reset --network mainnet/ropsten
    ```
+
+## Test
+
+Create a `.env` file and define: `NODE_BASE_URL` and `DEPLOYMENT_ACCOUNT_KEY`.
+
+```sh
+source .env && npm run fork:start
+npm test
+npm run fork:stop
+```
