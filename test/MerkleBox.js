@@ -83,7 +83,7 @@ contract('MerkleBox', async (accounts) => {
     })
 
     it('reverts if withdraw lock time is less than minimum', async () => {
-      const errorMessage = 'Holing lock must exceed minimum lock period.'
+      const errorMessage = 'Holding lock must exceed minimum lock period.'
       await erc20.approve(merkleBox.address, 1000, {from: funder})
       await expectRevert(merkleBox.newClaimsGroup(erc20.address, 1000, merkleRoot, 0, '', {from: funder}), errorMessage)
     })

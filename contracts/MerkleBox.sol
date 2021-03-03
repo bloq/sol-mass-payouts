@@ -123,7 +123,7 @@ contract MerkleBox is IMerkleBox {
         // prelim. parameter checks
         require(erc20 != address(0), "Invalid ERC20 address");
         require(merkleRoot != 0, "Merkle cannot be zero");
-        require(withdrawUnlockTime >= block.timestamp + LOCKING_PERIOD, "Holing lock must exceed minimum lock period");
+        require(withdrawUnlockTime >= block.timestamp + LOCKING_PERIOD, "Holding lock must exceed minimum lock period");
 
         claimGroupCount++;
         // reference our struct storage
