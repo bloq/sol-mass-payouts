@@ -20,6 +20,7 @@ contract MerkleBox is IMerkleBox {
         uint256 balance; // amount of token held currently
         bytes32 merkleRoot; // root of claims merkle tree
         uint256 withdrawUnlockTime; // withdraw forbidden before this time
+        string memo; // an string to store arbitary notes about the holding
     }
 
     mapping(uint256 => Holding) public holdings;
@@ -116,7 +117,8 @@ contract MerkleBox is IMerkleBox {
         address erc20,
         uint256 amount,
         bytes32 merkleRoot,
-        uint256 withdrawUnlockTime
+        uint256 withdrawUnlockTime,
+        string calldata memo
     ) external override returns (uint256) {
         // prelim. parameter checks
         require(erc20 != address(0), "Invalid ERC20 address");
@@ -145,8 +147,9 @@ contract MerkleBox is IMerkleBox {
         holding.balance = amount;
         holding.merkleRoot = merkleRoot;
         holding.withdrawUnlockTime = withdrawUnlockTime;
+        holding.memo = memo;
         claimGroupIds[msg.sender].push(claimGroupCount);
-        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, claimGroupCount, withdrawUnlockTime);
+        emit NewMerkle(msg.sender, erc20, amount, merkleRoot, claimGroupCount, withdrawUnlockTime, memo);
         return claimGroupCount;
     }
 
