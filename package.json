@@ -1,6 +1,6 @@
 {
   "name": "sol-mass-payouts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "sol-mass-payouts",
   "license": "MIT",
   "main": "truffle-config.js",
