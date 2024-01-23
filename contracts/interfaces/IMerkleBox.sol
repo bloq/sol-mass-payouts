@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.15;
 
 interface IMerkleBox {
     event NewMerkle(
@@ -13,7 +13,13 @@ interface IMerkleBox {
         string memo
     );
     event MerkleClaim(address indexed account, address indexed erc20, uint256 amount);
-    event MerkleFundUpdate(address indexed funder, bytes32 indexed merkleRoot, uint256 claimGroupId, uint256 amount, bool withdraw);
+    event MerkleFundUpdate(
+        address indexed funder,
+        bytes32 indexed merkleRoot,
+        uint256 claimGroupId,
+        uint256 amount,
+        bool withdraw
+    );
 
     function addFunds(uint256 claimGroupId, uint256 amount) external;
 
@@ -44,10 +50,5 @@ interface IMerkleBox {
         bytes32[] memory proof
     ) external view returns (bool);
 
-    function claim(
-        uint256 claimGroupId,
-        address account,
-        uint256 amount,
-        bytes32[] memory proof
-    ) external;
+    function claim(uint256 claimGroupId, address account, uint256 amount, bytes32[] memory proof) external;
 }

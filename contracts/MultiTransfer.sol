@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IMultiTransfer.sol";
 
 contract MultiTransfer is IMultiTransfer {
@@ -19,7 +19,7 @@ contract MultiTransfer is IMultiTransfer {
 
         // output amount to recipients
         for (uint256 i = 0; i < bits.length; i++) {
-            address a = address(bits[i] >> 96);
+            address a = address(uint160(bits[i] >> 96));
             uint256 amount = bits[i] & ((1 << 96) - 1);
             token.safeTransferFrom(msg.sender, a, amount);
         }
