@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "sol-mass-payouts",
   "license": "MIT",
-  "main": "truffle-config.js",
+  "main": "hardhat-config.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/bloq/sol-mass-payouts.git"
@@ -12,47 +12,41 @@
     "test": "test"
   },
   "scripts": {
-    "fork:start": "npx ganache-cli --fork $NODE_BASE_URL --host 0.0.0.0 --mnemonic $DEPLOYMENT_ACCOUNT_KEY &",
-    "fork:stop": "kill -TERM $(lsof -i :8545 -s TCP:LISTEN -t)",
-    "ganache-cli": "ganache-cli",
+    "precompile": "hardhat clean",
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "npm run compile && npx hardhat coverage --temp artifacts",
+    "fork": "hardhat node --no-deploy",
     "lint": "eslint ./test/*",
     "lint:fix": "eslint --fix ./test --ext .js",
-    "truffle": "truffle",
-    "test": "truffle test",
     "solhint": "solhint './contracts/**/*.sol'",
-    "solhint:fix": "prettier --write 'contracts/**/*.sol'"
+    "solhint:fix": "prettier --write 'contracts/**/*.sol'",
+    "prepare": "husky install"
   },
   "dependencies": {
-    "bip39": "^3.0.2",
-    "config": "^3.3.1",
-    "hdkey": "^2.0.1"
+    "@openzeppelin/contracts": "4.8.2"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^3.0.0",
-    "@openzeppelin/test-helpers": "^0.5.7",
-    "@truffle/hdwallet-provider": "^1.0.36",
-    "chai": "^4.2.0",
-    "dotenv": "^8.2.0",
-    "eslint": "^4.18.1",
-    "eslint-config-standard": "^11.0.0",
-    "eslint-plugin-import": "^2.9.0",
-    "eslint-plugin-mocha-no-only": "^1.1.0",
-    "eslint-plugin-node": "^5.2.1",
-    "eslint-plugin-promise": "^3.6.0",
-    "eslint-plugin-standard": "^3.0.1",
-    "ethlint": "^1.2.5",
-    "ganache-cli": "^6.12.0",
-    "left-pad": "^1.3.0",
-    "pre-commit": "^1.2.2",
-    "prettier": "^2.0.5",
-    "prettier-plugin-solidity": "^1.0.0-alpha.54",
-    "solc": "0.6.12",
-    "solhint": "^2.3.1",
-    "solhint-plugin-prettier": "0.0.4",
-    "truffle": "5.1.48"
-  },
-  "pre-commit": [
-    "solhint",
-    "lint"
-  ]
+    "@nomicfoundation/hardhat-toolbox": "4.0.0",
+    "@types/mocha": "^10.0.6",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "dotenv": "^16.3.1",
+    "eslint": "^8.56.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-mocha": "^10.2.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "hardhat": "^2.19.4",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-deploy": "^0.11.45",
+    "husky": "^6.0.0",
+    "prettier": "^3.2.4",
+    "prettier-plugin-solidity": "^1.3.1",
+    "solc": "0.8.9",
+    "solhint": "4.1.1",
+    "solhint-plugin-prettier": "0.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
 }
