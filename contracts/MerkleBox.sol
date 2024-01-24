@@ -2,12 +2,13 @@
 
 pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "./interfaces/IMerkleBox.sol";
-import "./interfaces/IERC20WithPermit.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {IMerkleBox} from "./interfaces/IMerkleBox.sol";
+import {IERC20WithPermit, IERC20} from "./interfaces/IERC20WithPermit.sol";
 
+// solhint-disable custom-errors, reason-string
 contract MerkleBox is IMerkleBox {
     using SafeERC20 for IERC20;
     using SafeERC20 for IERC20WithPermit;

@@ -2,9 +2,11 @@
 
 pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IMultiTransfer.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IMultiTransfer} from "./interfaces/IMultiTransfer.sol";
 
+// solhint-disable custom-errors
 contract MultiTransfer is IMultiTransfer {
     using SafeERC20 for IERC20;
 

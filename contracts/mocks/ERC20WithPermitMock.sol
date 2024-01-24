@@ -2,9 +2,10 @@
 
 pragma solidity 0.8.15;
 
-import "../interfaces/IERC20WithPermit.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {IERC20WithPermit} from "../interfaces/IERC20WithPermit.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+// solhint-disable custom-errors, const-name-snakecase, var-name-mixedcase
 contract ERC20WithPermitMock is IERC20WithPermit {
     using SafeMath for uint256;
 
