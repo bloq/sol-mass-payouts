@@ -1,5 +1,15 @@
-node_modules
-build
-.env
-.secret_info
+# VS Code
+.vscode
 
+# Node
+node_modules/
+
+# Env
+.env
+
+# Hardhat
+artifacts
+cache
+deployments/localhost/*
+coverage*
+typechain-types/*
