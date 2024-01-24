@@ -20,7 +20,7 @@ contract ERC20WithPermitMock is IERC20WithPermit {
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     mapping(address => uint256) public nonces;
 
-    constructor() {
+    constructor(address mintTo_, uint256 totalSupply_) {
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -34,6 +34,8 @@ contract ERC20WithPermitMock is IERC20WithPermit {
                 address(this)
             )
         );
+
+        _mint(mintTo_, totalSupply_);
     }
 
     function _mint(address to, uint256 value) internal {
