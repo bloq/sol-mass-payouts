@@ -4,6 +4,8 @@ import 'hardhat-contract-sizer'
 import 'hardhat-deploy'
 import 'dotenv/config'
 
+import './tasks/create-release'
+
 let contractSizer
 
 if (process.env.ENABLE_CONTRACT_SIZER === 'true') {
