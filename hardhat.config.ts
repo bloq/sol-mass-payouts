@@ -28,13 +28,15 @@ const config: HardhatUserConfig = {
     noColors: true,
   },
   networks: {
-    hardhat: {
-      chainId: 1,
-      forking: {
-        url: nodeUrl,
-        blockNumber: process.env.BLOCK_NUMBER ? parseInt(process.env.BLOCK_NUMBER) : undefined,
-      },
-    },
+    // Prepare hardhat network based on provided NODE_URL and BLOCK_NUMBER
+    hardhat: process.env.NODE_URL
+      ? {
+          forking: {
+            url: process.env.NODE_URL,
+            blockNumber: process.env.BLOCK_NUMBER ? parseInt(process.env.BLOCK_NUMBER) : undefined,
+          },
+        }
+      : {},
     localhost: {
       url: localhost,
       accounts,
