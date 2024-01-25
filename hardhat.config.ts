@@ -46,10 +46,29 @@ const config: HardhatUserConfig = {
       accounts,
       saveDeployments: true,
     },
+    bvm: {
+      url: nodeUrl,
+      chainId: 11155222,
+      accounts,
+      saveDeployments: true,
+    },
   },
 
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || '',
+      bvm: 'noApiKeyNeeded',
+    },
+    customChains: [
+      {
+        network: 'bvm',
+        chainId: 11155222,
+        urls: {
+          apiURL: 'http://external-testnet.bvmdev.cc/api',
+          browserURL: 'http://external-testnet.bvmdev.cc/',
+        },
+      },
+    ],
   },
 
   namedAccounts: {
