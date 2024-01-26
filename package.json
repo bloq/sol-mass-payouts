@@ -22,6 +22,7 @@
     "solhint": "solhint './contracts/**/*.sol'",
     "solhint:fix": "prettier --write 'contracts/**/*.sol'",
     "prepare": "husky install",
+    "deploy": "npx hardhat deploy",
     "create-release": "hardhat create-release"
   },
   "dependencies": {
