@@ -1,18 +1,14 @@
 {
-  "extends": "standard",
-  "globals": {
-    "artifacts": false,
-    "contract": false,
-    "beforeEach": false,
-    "before": false,
-    "it": false,
-    "web3": false,
-    "describe": false,
-    "assert":true,
-    "context":true
-  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:mocha/recommended"
+  ],
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "prettier", "mocha"],
   "rules": {
-    "prefer-const": "error",
-    "semi": ["error", "never"]
+    "jsdoc/require-jsdoc": "off"
   }
 }
