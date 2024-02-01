@@ -4,6 +4,8 @@ import 'hardhat-contract-sizer'
 import 'hardhat-deploy'
 import 'dotenv/config'
 
+import './tasks/create-release'
+
 let contractSizer
 
 if (process.env.ENABLE_CONTRACT_SIZER === 'true') {
@@ -28,13 +30,15 @@ const config: HardhatUserConfig = {
     noColors: true,
   },
   networks: {
-    hardhat: {
-      chainId: 1,
-      forking: {
-        url: nodeUrl,
-        blockNumber: process.env.BLOCK_NUMBER ? parseInt(process.env.BLOCK_NUMBER) : undefined,
-      },
-    },
+    // Prepare hardhat network based on provided NODE_URL and BLOCK_NUMBER
+    hardhat: process.env.NODE_URL
+      ? {
+          forking: {
+            url: process.env.NODE_URL,
+            blockNumber: process.env.BLOCK_NUMBER ? parseInt(process.env.BLOCK_NUMBER) : undefined,
+          },
+        }
+      : {},
     localhost: {
       url: localhost,
       accounts,
@@ -46,10 +50,29 @@ const config: HardhatUserConfig = {
       accounts,
       saveDeployments: true,
     },
+    bvm: {
+      url: nodeUrl,
+      chainId: 11155222,
+      accounts,
+      saveDeployments: true,
+    },
   },
 
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || '',
+      bvm: 'noApiKeyNeeded',
+    },
+    customChains: [
+      {
+        network: 'bvm',
+        chainId: 11155222,
+        urls: {
+          apiURL: 'http://external-testnet.bvmdev.cc/api',
+          browserURL: 'http://external-testnet.bvmdev.cc/',
+        },
+      },
+    ],
   },
 
   namedAccounts: {

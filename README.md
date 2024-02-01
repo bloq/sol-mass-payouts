@@ -87,35 +87,35 @@ There will be atleast 30 days withdraw locking. To permanently lock the funds, s
 maximum, or an arbitrary time millions of years in the future.
 
 ## Setup.
-
-1. Install packages
-
-   ```
-   npm i -g truffle
-   npm i
-   ```
-
-2. Update provider url in config/default.json
-
-3. Set DEPLOYMENT_ACCOUNT_KEY in env
+Install packages
 
    ```
-   create a .env file in root
-   DEPLOYMENT_ACCOUNT_KEY =  "my mnemonic phrase"
+   $ npm i
    ```
 
-4. Deploy you own contracts if want to do arb-
+### Compile Contracts
+```
+$ npm run compile
+```
 
-   ```
-   truffle migrate --reset --network mainnet/ropsten
-   ```
+### Test
+```
+$ npm run test
+```
 
-## Test
+### Coverage Report
+```
+$ npm run coverage
+```
 
-Create a `.env` file and define: `NODE_BASE_URL` and `DEPLOYMENT_ACCOUNT_KEY`.
+### Deploy
+Setup the env vars properly (See `.env.template` file) and run:
 
 ```sh
-source .env && npm run fork:start
-npm test
-npm run fork:stop
+# deploy
+$ npm run deploy -- --gasprice <gas price in wei> --network <network>
+
+# create release
+$ npx hardhat create-release --release <semver> --network <network>
 ```
+
