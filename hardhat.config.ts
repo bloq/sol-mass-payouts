@@ -50,26 +50,30 @@ const config: HardhatUserConfig = {
       accounts,
       saveDeployments: true,
     },
-    bvm: {
+    hemi: {
       url: nodeUrl,
-      chainId: 11155222,
+      chainId: 743111,
       accounts,
       saveDeployments: true,
     },
   },
 
+  sourcify: {
+    enabled: false,
+  },
+
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY || '',
-      bvm: 'noApiKeyNeeded',
+      hemi: 'noApiKeyNeeded',
     },
     customChains: [
       {
-        network: 'bvm',
-        chainId: 11155222,
+        network: 'hemi',
+        chainId: 743111,
         urls: {
-          apiURL: 'http://external-testnet.bvmdev.cc/api',
-          browserURL: 'http://external-testnet.bvmdev.cc/',
+          apiURL: 'https://testnet.explorer.hemi.network/api',
+          browserURL: 'https://testnet.explorer.hemi.network',
         },
       },
     ],
