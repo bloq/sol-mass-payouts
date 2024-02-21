@@ -20,7 +20,12 @@ const nodeUrl = process.env.NODE_URL || localhost
 
 const testMnemonic = 'test test test test test test test test test test test junk'
 const mnemonic = process.env.MNEMONIC || testMnemonic
-const accounts = { mnemonic }
+
+let accounts: { mnemonic: string } | [string] = { mnemonic }
+
+if (process.env.PRIVATE_KEY) {
+  accounts = [process.env.PRIVATE_KEY]
+}
 
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
