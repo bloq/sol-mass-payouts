@@ -67,7 +67,7 @@ function getPreviousRelease() {
 
 /* eslint-disable no-param-reassign */
 task('create-release', 'Create release file from deploy data')
-  .addParam('release', 'Release semantic version, i.e 1.2.3')
+  .addOptionalParam('release', 'Release semantic version, i.e 1.2.3')
   .setAction(async function ({ release }, hre) {
     const network = hre.network.name
     console.log('Task args: release %s, network %s', release, network)
@@ -81,11 +81,19 @@ task('create-release', 'Create release file from deploy data')
       fs.mkdirSync('releases/')
     }
 
-    const releaseDir = `releases/${release}`
-    const releaseFile = `${releaseDir}/contracts.json`
-
     // Get previous release data
     const prevReleaseData = getPreviousRelease()
+
+    // If release is not provided and previous release does not exist then release is default to 1.0.0
+    // else if release is not provided and previous release exist then release is same as previous release
+    if (!release && !prevReleaseData.version) {
+      release = '1.0.0'
+    } else if (!release && prevReleaseData.version) {
+      release = prevReleaseData.version
+    }
+
+    const releaseDir = `releases/${release}`
+    const releaseFile = `${releaseDir}/contracts.json`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let releaseData: any = {}
 
