@@ -4,6 +4,8 @@ import 'hardhat-contract-sizer'
 import 'hardhat-deploy'
 import 'dotenv/config'
 
+import './tasks/create-release'
+
 let contractSizer
 
 if (process.env.ENABLE_CONTRACT_SIZER === 'true') {
@@ -18,7 +20,12 @@ const nodeUrl = process.env.NODE_URL || localhost
 
 const testMnemonic = 'test test test test test test test test test test test junk'
 const mnemonic = process.env.MNEMONIC || testMnemonic
-const accounts = { mnemonic }
+
+let accounts: { mnemonic: string } | [string] = { mnemonic }
+
+if (process.env.PRIVATE_KEY) {
+  accounts = [process.env.PRIVATE_KEY]
+}
 
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
@@ -28,13 +35,15 @@ const config: HardhatUserConfig = {
     noColors: true,
   },
   networks: {
-    hardhat: {
-      chainId: 1,
-      forking: {
-        url: nodeUrl,
-        blockNumber: process.env.BLOCK_NUMBER ? parseInt(process.env.BLOCK_NUMBER) : undefined,
-      },
-    },
+    // Prepare hardhat network based on provided NODE_URL and BLOCK_NUMBER
+    hardhat: process.env.NODE_URL
+      ? {
+          forking: {
+            url: process.env.NODE_URL,
+            blockNumber: process.env.BLOCK_NUMBER ? parseInt(process.env.BLOCK_NUMBER) : undefined,
+          },
+        }
+      : {},
     localhost: {
       url: localhost,
       accounts,
@@ -46,10 +55,33 @@ const config: HardhatUserConfig = {
       accounts,
       saveDeployments: true,
     },
+    hemi: {
+      url: nodeUrl,
+      chainId: 743111,
+      accounts,
+      saveDeployments: true,
+    },
+  },
+
+  sourcify: {
+    enabled: false,
   },
 
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_API_KEY || '',
+      hemi: 'noApiKeyNeeded',
+    },
+    customChains: [
+      {
+        network: 'hemi',
+        chainId: 743111,
+        urls: {
+          apiURL: 'https://testnet.explorer.hemi.network/api',
+          browserURL: 'https://testnet.explorer.hemi.network',
+        },
+      },
+    ],
   },
 
   namedAccounts: {

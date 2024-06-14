@@ -21,16 +21,20 @@
     "lint:fix": "eslint --fix ./test --ext .js",
     "solhint": "solhint './contracts/**/*.sol'",
     "solhint:fix": "prettier --write 'contracts/**/*.sol'",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "deploy": "npx hardhat deploy",
+    "create-release": "hardhat create-release"
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.8.2"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "4.0.0",
+    "@types/lodash": "^4.14.202",
     "@types/mocha": "^10.0.6",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
+    "compare-versions": "^6.1.0",
     "dotenv": "^16.3.1",
     "eslint": "^8.56.0",
     "eslint-config-standard": "^17.1.0",
@@ -41,6 +45,7 @@
     "hardhat-contract-sizer": "^2.10.0",
     "hardhat-deploy": "^0.11.45",
     "husky": "^6.0.0",
+    "lodash": "^4.17.21",
     "merkletreejs": "^0.3.11",
     "prettier": "^3.2.4",
     "prettier-plugin-solidity": "^1.3.1",
