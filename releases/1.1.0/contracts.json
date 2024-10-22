@@ -9,7 +9,7 @@
       "MerkleBox": "0x7Af2a03C2E8acf552BaE428C7276153B9c015077",
       "MultiTransfer": "0xc614136d6c5AB85bc2aCF0ec2652351642d7F54E"
     },
-    "hemi": {
+    "hemiSepolia": {
       "MerkleBox": "0xc2dA346E2f655B1013cB0f405Ca1b99553F7a580",
       "MultiTransfer": "0x7765B6dC783074eEa3473559a613b8AC0413a516"
     }
