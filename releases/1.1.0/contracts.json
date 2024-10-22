@@ -12,6 +12,10 @@
     "hemiSepolia": {
       "MerkleBox": "0xc2dA346E2f655B1013cB0f405Ca1b99553F7a580",
       "MultiTransfer": "0x7765B6dC783074eEa3473559a613b8AC0413a516"
+    },
+    "hemi": {
+      "MerkleBox": "0x112de51b708c77C628532120Ffe2c0200f067399",
+      "MultiTransfer": "0x9967F8dE0b858efC6ffFBe22C7C87aC5935C6cF9"
     }
   }
 }
